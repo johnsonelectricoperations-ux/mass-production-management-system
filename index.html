@@ -1,0 +1,2501 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>생산관리 시스템</title>
+    <style>
+        /* 기본 스타일 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f6f8fa 0%, #e9ecef 100%); min-height: 100vh; color: #333; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        .header { background: #ffffff; padding: 20px; border-radius: 10px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .header h1 { color: #007bff; font-size: 1.8em; margin-bottom: 5px; }
+        #currentStatus { font-size: 1.1em; font-weight: bold; }
+
+        /* 설비 선택 */
+        .equipment-select-area { display: flex; align-items: center; justify-content: center; background: #ffffff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        #equipmentSelect { padding: 10px 15px; font-size: 1em; border: 1px solid #ced4da; border-radius: 5px; width: 300px; margin-right: 20px; }
+        .equipment-name { font-size: 1.2em; font-weight: bold; color: #28a745; }
+
+        /* 작업 버튼 영역 */
+        .action-buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; padding: 0 10px; }
+        .btn { padding: 11px 8px; font-size: 0.95em; border: none; border-radius: 8px; cursor: pointer; transition: all 0.3s; font-weight: 600; white-space: nowrap; margin: 0; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: #0056b3; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,123,255,0.3); }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover:not(:disabled) { background-color: #5a6268; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(108,117,125,0.3); }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover:not(:disabled) { background-color: #c82333; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(220,53,69,0.3); }
+        .btn-warning { background-color: #fd7e14; color: white; }
+        .btn-warning:hover:not(:disabled) { background-color: #e8690b; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(253,126,20,0.3); }
+        .btn:disabled { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; }
+        #btnChangeover:disabled { background-color: #e9ecef !important; color: #adb5bd !important; cursor: not-allowed; }
+        #btnStartShift { background-color: #fd7e14; color: white; }
+        #btnStartShift:hover:not(:disabled) { background-color: #e8690b; }
+        #btnStartShift:disabled { background-color: #e9ecef !important; color: #adb5bd !important; cursor: not-allowed; }
+        .btn-success { background-color: #28a745; color: white; }
+        .btn-success:hover:not(:disabled) { background-color: #218838; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(40,167,69,0.3); }
+
+        @media (max-width: 768px) {
+            .action-buttons { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .btn { padding: 9px 6px; font-size: 0.85em; }
+        }
+      
+        /* 불량등록 버튼 영역 */
+        .defect-buttons-area { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: transparent; padding: 0 10px; margin-bottom: 20px; }
+
+        /* 불량등록 개별 버튼 */
+        .defect-btn { display: flex; align-items: center; justify-content: center; padding: 11px 8px; border: 2px solid #dee2e6; border-radius: 8px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); cursor: pointer; transition: all 0.3s; min-height: 39px; }
+        .defect-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-color: #007bff; }
+        .defect-btn:active { transform: translateY(0); }
+
+        /* 셋팅불량 버튼 */
+        .defect-btn-setting { border-color: #ffc107; }
+        .defect-btn-setting:hover { background: linear-gradient(135deg, #fff3cd 0%, #ffffff 100%); border-color: #ff9800; }
+
+        /* 공정불량 버튼 */
+        .defect-btn-process { border-color: #dc3545; }
+        .defect-btn-process:hover { background: linear-gradient(135deg, #f8d7da 0%, #ffffff 100%); border-color: #c82333; }
+
+        /* 불량 텍스트 */
+        .defect-label { font-size: 0.95em; font-weight: 600; color: #495057; text-align: center; }
+
+        /* 태블릿 반응형 */
+        @media (max-width: 768px) {
+            .defect-buttons-area { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .defect-btn { padding: 9px 6px; font-size: 0.85em; }
+        }
+
+        /* 작업 폼 */
+        .form-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: none; justify-content: center; align-items: flex-start; z-index: 1000; padding-top: 50px; }
+        .form-container { background: white; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 0 20px rgba(0, 0, 0, 0.2); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #495057; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1em; }
+        .form-buttons { text-align: right; margin-top: 20px; }
+        .form-buttons .btn { margin-left: 10px; }
+        .form-container::-webkit-scrollbar { width: 8px; }
+        .form-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .form-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .form-container::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        /* 작업일지 테이블 */
+        .work-log { background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .work-log h3 { margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; color: #495057; }
+        .work-log-container { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; }
+        .work-log-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9em; }
+        .work-log-table thead { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
+        .work-log-table th, .work-log-table td { border: 1px solid #dee2e6; padding: 8px; }
+        .work-log-table th { background-color: #e9ecef; font-weight: 600; color: #495057; font-size: 0.85em; }
+        .work-log-table tr:nth-child(even) { background-color: #f8f9fa; }
+        .work-log-table tr:hover { background-color: #e2f4ff; }
+        .work-log-container::-webkit-scrollbar { width: 8px; }
+        .work-log-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .work-log-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .work-log-container::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .no-record { text-align: center; color: #adb5bd; font-style: italic; padding: 20px !important; }
+        .work-type-cell { font-weight: bold; font-size: 0.9em; color: #495057; }
+
+        /* 시간 컬럼 스타일 조정 */
+        .time-col { width: 55px; }
+        .work-table td.time-cell { font-size: 0.8em; }
+
+        /* 상태 색상 */
+        .status-pending { background-color: #fff3cd; color: #856404; font-weight: bold; }
+        .status-complete { background-color: #d4edda; color: #155724; }
+        .status-downtime { background-color: #f8d7da; color: #721c24; }
+        .status-incomplete { background-color: #f8d7da; color: #721c24; font-weight: bold; }
+        
+        /* 알림 및 로딩 */
+        .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; text-align: center; display: none; }
+        .alert-success { color: #0f5132; background-color: #d1e7dd; border-color: #badbcc; }
+        .alert-error { color: #842029; background-color: #f8d7da; border-color: #f5c2c7; }
+        .loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.8); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .loading p { font-size: 1.5em; color: #007bff; animation: blink 1s infinite; }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* 제품 검색 결과 스타일 */
+        .search-results { max-height: 200px; overflow-y: auto; border: 1px solid #ced4da; border-top: none; background: white; display: none; position: absolute; width: 100%; z-index: 1001; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .search-result-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .search-result-item:hover { background-color: #f8f9fa; }
+        .search-result-item:last-child { border-bottom: none; }
+        .product-code { font-weight: bold; color: #007bff; }
+        .product-name { color: #6c757d; font-size: 0.9em; }
+        .form-group { position: relative; }
+        .selected-product-info { background-color: #e3f2fd; border: 1px solid #2196f3; border-radius: 4px; padding: 10px; font-weight: bold; color: #1976d2; }
+
+        .checkbox-group { display: flex; flex-direction: column; gap: 12px; background-color: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6; }
+        .checkbox-item { display: flex; align-items: center; font-weight: normal; margin: 0; padding: 8px 12px; background-color: white; border-radius: 4px; border: 1px solid #e9ecef; transition: background-color 0.2s; }
+        .checkbox-item:hover { background-color: #f1f3f4; }
+        .checkbox-item input[type="checkbox"] { margin: 0 12px 0 0; width: 18px; height: 18px; accent-color: #007bff; }
+        .checkbox-item span { flex: 1; font-size: 14px; color: #495057; }
+
+        .status-changeover { background-color: #cce5ff; color: #0056b3; font-weight: bold; }
+
+        /* 비가동내역 테이블 */
+        .downtime-log { background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 20px; }
+        .downtime-log h3 { margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; color: #495057; }
+        .downtime-log-container { max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; }
+        .downtime-log-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.9em; }
+        .downtime-log-table thead { position: sticky; top: 0; background-color: #f8f9fa; z-index: 10; }
+        .downtime-log-table th, .downtime-log-table td { border: 1px solid #dee2e6; padding: 8px; }
+        .downtime-log-table th { background-color: #fff3cd; font-weight: 600; color: #856404; font-size: 0.85em; }
+        .downtime-log-table tr:nth-child(even) { background-color: #fffbf0; }
+        .downtime-log-table tr:hover { background-color: #fff3cd; }
+        .downtime-log-container::-webkit-scrollbar { width: 8px; }
+        .downtime-log-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .downtime-log-container::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .downtime-log-container::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+
+        /* 불량등록 전체 화면 */
+        .defect-entry-screen { display: none; background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .defect-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #dee2e6; }
+        .defect-entry-title { font-size: 1.3em; font-weight: bold; color: #495057; }
+        .defect-entry-close { padding: 8px 16px; background-color: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 0.9em; }
+        .defect-entry-close:hover { background-color: #5a6268; }
+
+        /* TM-NO 입력 영역 */
+        .defect-product-input { margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .defect-product-input label { display: block; margin-bottom: 8px; font-weight: 600; color: #495057; }
+        .defect-product-search { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 4px; font-size: 1em; }
+
+        /* 불량 입력 테이블 - 3열 그리드로 변경 */
+        .defect-entry-table-container { max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; margin-bottom: 20px; padding: 15px; }
+        .defect-entry-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .defect-entry-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: #f8f9fa; border-radius: 6px; border: 1px solid #dee2e6; transition: background 0.2s; }
+        .defect-entry-item:hover { background: #e9ecef; }
+        .defect-name-cell { color: #495057; font-weight: 500; flex: 1; font-size: 0.9em; }
+        .defect-qty-input { width: 60px; padding: 6px; border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 0.95em; margin-left: 10px; }
+        .defect-qty-input:focus { outline: none; border-color: #007bff; }
+
+        /* 태블릿 반응형 */
+        @media (max-width: 768px) {
+            .defect-entry-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+        }
+
+        /* 합계 및 버튼 영역 */
+        .defect-entry-footer { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .defect-total { font-size: 1.2em; font-weight: bold; color: #dc3545; }
+        .defect-submit-btn { padding: 12px 30px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1em; font-weight: 600; }
+        .defect-submit-btn:hover { background-color: #0056b3; }
+        .defect-submit-btn:disabled { background-color: #e9ecef; color: #adb5bd; cursor: not-allowed; }
+
+        /* 불량 입력 현황 (카드 형식) */
+        .defect-status-area { background: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: 20px; }
+        .defect-status-area h3 { margin-bottom: 15px; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; color: #495057; }
+
+        /* 섹션 구분 */
+        .defect-section { margin-bottom: 20px; }
+        .defect-section-title { font-size: 1em; font-weight: 600; color: #495057; margin-bottom: 10px; padding-left: 10px; border-left: 4px solid; }
+        .defect-section-title.setting { border-color: #ffc107; }
+        .defect-section-title.process { border-color: #dc3545; }
+
+        /* 불량 카드 그리드 */
+        .defect-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .defect-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 10px; text-align: center; transition: all 0.2s; }
+        .defect-card:hover { background: #e9ecef; transform: translateY(-2px); }
+        .defect-card-setting { border-left: 4px solid #ffc107; }
+        .defect-card-process { border-left: 4px solid #dc3545; }
+        .defect-card-name { font-size: 0.85em; font-weight: 600; color: #495057; margin-bottom: 5px; }
+        .defect-card-qty { font-size: 1.2em; font-weight: bold; color: #dc3545; }
+        .defect-card-product { font-size: 0.75em; color: #6c757d; margin-top: 3px; }
+        .no-defect-message { text-align: center; padding: 20px; color: #adb5bd; font-style: italic; }
+
+        @media (max-width: 768px) {
+            .defect-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        }
+
+        #changeoverForm .inline-label {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          white-space: nowrap;
+        }
+        #changeoverForm .inline-label input[type="checkbox"] {
+          margin: 0;
+        }
+
+        .group-buttons{display:flex;gap:10px}.group-btn{flex:1;padding:16px 12px;font-size:1.05em;border:none;border-radius:8px;cursor:pointer;font-weight:700;background:#000;color:#fff}.group-btn:hover{background:#111}
+
+
+    </style>
+</head>
+
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>스마트 생산관리 시스템 (MES)</h1>
+            <div class="equipment-select-area">
+                <select id="equipmentSelect" onchange="onEquipmentSelect()"></select>
+                <div id="selectedEquipmentDisplay" class="equipment-name">설비를 선택해주세요</div>
+            </div>
+        </div>
+
+        <div id="staleWarningBar" style="display:none; background:#fff3cd; border:1px solid #ffe69c; color:#664d03; padding:12px 16px; border-radius:8px; margin-bottom:16px;  justify-content:space-between; align-items:center;">
+          <div>
+            <strong>⚠️ 과거 진행중 기록이 발견되었습니다.</strong>
+            <span id="staleSummaryText" style="margin-left:8px;"></span>
+          </div>
+          <div>
+            <button id="btnResolveStale" class="btn btn-warning" onclick="onResolveStaleOngoing()">진행중 정리</button>
+          </div>
+        </div>
+
+        <div class="group-buttons" id="groupButtons" style="display:none; margin:0 10px 16px;">
+          <button class="group-btn" onclick="showTaskGroup('work')">작업일지등록</button>
+          <button class="group-btn" onclick="showTaskGroup('defect')">불량등록</button>
+          <button class="group-btn" onclick="showTaskGroup('inspection')">자주검사등록</button>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-success" id="btnStartShift" onclick="showStartShiftForm()" disabled>근무확인</button>
+            <button class="btn btn-primary" id="btnStartWork" onclick="showStartWorkForm()">작업시작</button>
+            <button class="btn btn-secondary" id="btnEndWork" onclick="showEndWorkForm()" disabled>작업종료</button>
+            <button class="btn" id="btnChangeover" onclick="showChangeoverForm()" disabled style="background-color: #007bff; color: white;">기종교환</button>
+            <button class="btn btn-secondary" id="btnAddDowntime" onclick="showDowntimeForm()">비가동등록</button>
+            <button class="btn btn-warning" id="btnEndShift" onclick="showEndShiftForm()">근무종료</button>
+        </div>
+
+        <!-- 불량등록 버튼 영역 -->
+        <div class="defect-buttons-area" id="defectButtonsArea" style="display: none;">
+            <div class="defect-btn defect-btn-setting" onclick="showSettingDefectForm()">
+                <div class="defect-label">셋팅불량 등록</div>
+            </div>
+            <div class="defect-btn defect-btn-process" onclick="showProcessDefectForm()">
+                <div class="defect-label">공정불량 등록</div>
+            </div>
+        </div>
+
+        <!-- 불량등록 화면 -->
+        <div class="defect-entry-screen" id="defectEntryScreen">
+            <div class="defect-entry-header">
+                <div class="defect-entry-title" id="defectEntryTitle">셋팅불량 등록</div>
+                <button class="defect-entry-close" onclick="closeDefectEntryScreen()">닫기</button>
+            </div>
+            
+            <!-- TM-NO 입력 -->
+            <div class="defect-product-input">
+                <label for="defectProductCode">TM-NO</label>
+                <input type="text" id="defectProductCode" class="defect-product-search" placeholder="제품코드를 입력하세요" autocomplete="off">
+                <div id="defectProductSearchResults" class="search-results"></div>
+            </div>
+            
+            <!-- 불량 입력 그리드 -->
+            <div class="defect-entry-table-container">
+                <div class="defect-entry-grid" id="defectEntryGrid">
+                    <!-- JavaScript로 동적 생성 -->
+                </div>
+            </div>
+            
+            <!-- 합계 및 등록 버튼 -->
+            <div class="defect-entry-footer">
+                <div class="defect-total">
+                    총 불량 수량: <span id="defectTotalQty">0</span>개
+                </div>
+                <button class="defect-submit-btn" id="defectSubmitBtn" onclick="submitDefectEntry()">등록</button>
+            </div>
+        </div>
+
+        <div class="form-overlay" id="startShiftForm">
+            <div class="form-container">
+                <h2>근무시작</h2>
+                <div class="form-group">
+                    <div class="form-group">
+                        <label>현재 교대</label>
+                        <div id="currentShiftDisplay" style="background-color: #e3f2fd; padding: 10px; border-radius: 4px; font-weight: bold;">
+                            <!-- 자동 판별된 교대가 여기에 표시됨 -->
+                        </div>
+                    </div>
+                </div>
+                <div id="previousHandoverInfo" class="form-group" style="display: none;">
+                    <label>이전 교대 인계사항</label>
+                    <div id="handoverDisplay" style="background-color: #fff3cd; padding: 15px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ffeaa7;">
+                        <!-- 인계사항이 여기에 표시됨 -->
+                    </div>
+                </div>
+                <div id="equipmentStatusInfo" class="form-group">
+                    <label>설비 현재 상태</label>
+                    <div id="statusDisplay" style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 10px;">
+                        <!-- 설비 상태가 여기에 표시됨 -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="startShiftRemark">근무시작 특이사항</label>
+                    <textarea id="startShiftRemark" rows="2" placeholder="근무시작시 특이사항이 있으면 입력하세요"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="hideAllForms()">확인</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-overlay" id="startWorkForm">
+            <div class="form-container">
+                <h2>작업 시작 등록</h2>
+                <div class="form-group">
+                    <label for="startWorkerCode">작업자</label>
+                    <select id="startWorkerCode"></select>
+                </div>
+                <div class="form-group">
+                    <label for="startProductCode">제품 검색</label>
+                    <input type="text" id="startProductCode" placeholder="제품코드를 입력하세요" autocomplete="off">
+                    <div id="productSearchResults" class="search-results"></div>
+                    <input type="hidden" id="selectedProductCode" value="">
+                </div>
+                <div class="form-group" id="selectedProductDisplay" style="display: none;">
+                    <label>선택된 제품</label>
+                    <div class="selected-product-info">
+                        <span id="selectedProductName"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="startWorkTime">작업 시작시간</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="startWorkHour" style="width: 48%;">
+                            <!-- JavaScript로 채워짐 -->
+                        </select>
+                        <select id="startWorkMinute" style="width: 48%;">
+                            <!-- JavaScript로 채워짐 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="startRemark">비고</label>
+                    <textarea id="startRemark" rows="2"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="submitStartWork()">시작</button>
+                    <button class="btn btn-secondary" onclick="hideAllForms()">취소</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-overlay" id="downtimeForm">
+            <div class="form-container">
+                <h2>비가동 등록</h2>
+                <div class="form-group">
+                    <label for="lossCode">비가동 사유</label>
+                    <select id="lossCode"></select>
+                </div>
+                <div class="form-group">
+                    <label for="downtimeStartTime">비가동 시작시간</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="downtimeStartHour" style="width: 48%;">
+                            <!-- 시간 옵션들이 JavaScript로 채워짐 -->
+                        </select>
+                        <select id="downtimeStartMinute" style="width: 48%;">
+                            <!-- 분 옵션들이 JavaScript로 채워짐 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="downtimeEndTime">비가동 종료시간</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="downtimeEndHour" style="width: 48%;">
+                            <!-- 시간 옵션들이 JavaScript로 채워짐 -->
+                        </select>
+                        <select id="downtimeEndMinute" style="width: 48%;">
+                            <!-- 분 옵션들이 JavaScript로 채워짐 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="downtimeDetail">세부내용</label>
+                    <textarea id="downtimeDetail" rows="3" placeholder="비가동 상황에 대한 자세한 내용을 입력하세요"></textarea>
+                </div>
+                                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="submitDowntime()">등록</button>
+                    <button class="btn btn-secondary" onclick="hideAllForms()">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-overlay" id="endWorkForm">
+            <div class="form-container">
+                <h2>작업 종료 등록</h2>
+                <div class="form-group">
+                    <label for="endQuantity">생산 수량 (양품)</label>
+                    <input type="number" id="endQuantity" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="endWorkTime">작업 종료시간</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="endWorkHour" style="width: 48%;">
+                            <!-- JavaScript로 채워짐 -->
+                        </select>
+                        <select id="endWorkMinute" style="width: 48%;">
+                            <!-- JavaScript로 채워짐 -->
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="endRemark">비고</label>
+                    <textarea id="endRemark" rows="2"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="submitEndWork()">완료</button>
+                    <button class="btn btn-secondary" onclick="hideAllForms()">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-overlay" id="endShiftForm">
+            <div class="form-container">
+                <h2>근무종료 등록</h2>
+                <div class="form-group">
+                    <label for="endShiftQuantity">마지막 작업 생산 수량</label>
+                    <input type="number" id="endShiftQuantity" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="endShiftTime">근무종료 시간</label>
+                    <select id="endShiftTime">
+                        <option value="08:00">08:00 (C조→A조)</option>
+                        <option value="16:00">16:00 (A조→B조)</option>
+                        <option value="00:00">00:00 (B조→C조)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>휴식시간 근무</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="shiftBreakWork1">
+                            <span>1차 휴식시간 근무</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="shiftMealWork">
+                            <span>식사시간 근무</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="shiftBreakWork2">
+                            <span>2차 휴식시간 근무</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>불량 등록 확인</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="defectConfirmCheck">
+                            <span>셋팅불량과 공정불량을 모두 입력했습니까?</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="handoverNote">다음 교대 인계사항</label>
+                    <textarea id="handoverNote" rows="3" placeholder="다음 교대에 전달할 중요한 사항을 입력하세요 (설비 이상, 특이사항 등)"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="endShiftRemark">비고</label>
+                    <textarea id="endShiftRemark" rows="2"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-warning" onclick="submitEndShift()">근무종료</button>
+                    <button class="btn btn-secondary" onclick="hideAllForms()">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 셋팅불량 등록 폼 -->
+        <div class="form-overlay" id="settingDefectForm">
+            <div class="form-container">
+                <h2>셋팅불량 등록</h2>
+                <div class="form-group">
+                    <label for="settingDefectCode">불량 유형</label>
+                    <select id="settingDefectCode"></select>
+                </div>
+                <div class="form-group">
+                    <label for="settingDefectQty">불량 수량</label>
+                    <input type="number" id="settingDefectQty" min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="settingDefectTime">발생 시간</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="settingDefectHour" style="width: 48%;"></select>
+                        <select id="settingDefectMinute" style="width: 48%;"></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="settingDefectRemark">비고</label>
+                    <textarea id="settingDefectRemark" rows="3" placeholder="불량 발생 상황을 입력하세요"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="submitSettingDefect()">등록</button>
+                    <button class="btn btn-secondary" onclick="hideAllForms()">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 공정불량 등록 폼 -->
+        <div class="form-overlay" id="processDefectForm">
+            <div class="form-container">
+                <h2>공정불량 등록</h2>
+                <div class="form-group">
+                    <label for="processDefectCode">불량 유형</label>
+                    <select id="processDefectCode"></select>
+                </div>
+                <div class="form-group">
+                    <label for="processDefectQty">불량 수량</label>
+                    <input type="number" id="processDefectQty" min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label for="processDefectTime">발생 시간</label>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="processDefectHour" style="width: 48%;"></select>
+                        <select id="processDefectMinute" style="width: 48%;"></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="processDefectRemark">비고</label>
+                    <textarea id="processDefectRemark" rows="3" placeholder="불량 발생 상황을 입력하세요"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="submitProcessDefect()">등록</button>
+                    <button class="btn btn-secondary" onclick="hideAllForms()">취소</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-overlay" id="changeoverForm">          
+            <div class="form-container">
+                <h2>기종교환 시작</h2>
+                <div class="form-group">
+                  <label class="inline-label">
+                    <input type="checkbox" id="changeoverManualTimeChk" onchange="toggleChangeoverManualTime(this.checked)">
+                    시작시간 직접 입력
+                  </label>
+                </div>
+                <div class="form-group" id="changeoverManualTimeBox" style="display:none;">
+                  <label>기종교환 시작시간</label>
+                  <div style="display:flex; gap:10px;">
+                    <select id="changeoverStartHour" style="width:48%;"></select>
+                    <select id="changeoverStartMinute" style="width:48%;"></select>
+                  </div>
+                </div>
+                <div class="form-group">
+                    <label for="changeoverWorkerCode">작업자</label>
+                    <select id="changeoverWorkerCode"></select>
+                </div>
+                <div class="form-group">
+                    <label for="changeoverRemark">비고</label>
+                    <textarea id="changeoverRemark" rows="2" placeholder="이전 제품 → 새 제품"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button class="btn btn-primary" onclick="submitChangeover()">기종교환 시작</button>
+                    <button class="btn btn-secondary" onclick="hideAllForms()">취소</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="reportTablesArea">
+            <div class="work-log">
+                <h3 id="workLogTitle">작업일지</h3>
+                <div class="work-log-container">
+                    <table class="work-log-table" id="workTable">
+                        <thead>
+                            <tr>
+                                <th>일자</th>
+                                <th class="time-col">시작</th>
+                                <th class="time-col">종료</th>
+                                <th>근무조</th>
+                                <th>유형</th>
+                                <th>TM-NO</th>
+                                <th>품명</th>
+                                <th>수량</th>
+                                <th>상태</th>
+                                <th>비고</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workTableBody">
+                            <tr>
+                                <td colspan="10" class="no-record">설비를 선택하면 작업 기록이 나타납니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="downtime-log">
+                <h3 id="downtimeLogTitle">비가동내역</h3>
+                <div class="downtime-log-container">
+                    <table class="downtime-log-table" id="downtimeTable">
+                        <thead>
+                            <tr>
+                                <th>일자</th>
+                                <th class="time-col">시작</th>
+                                <th class="time-col">종료</th>
+                                <th>근무조</th>
+                                <th>TM-NO</th>
+                                <th>비가동사유</th>
+                                <th>세부내용</th>
+                            </tr>
+                        </thead>
+                        <tbody id="downtimeTableBody">
+                            <tr>
+                                <td colspan="7" class="no-record">비가동 기록이 없습니다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="defect-status-area">
+                    <h3 id="defectStatusTitle">금일 불량 입력 현황</h3>
+                    <div id="defectStatusGrid">
+                        <div class="no-defect-message">설비를 선택하면 불량 입력 현황이 표시됩니다.</div>
+                    </div>
+                </div>
+            </div>
+        </div>       
+        <div class="alert alert-success" id="successAlert">
+            <span id="successMessage"></span>
+        </div>
+        
+        <div class="alert alert-error" id="errorAlert">
+            <span id="errorMessage"></span>
+        </div>
+        
+        <div class="loading" id="loadingDiv">
+            <p>처리중입니다</p>
+        </div>
+    </div>
+
+    <script>
+        let selectedEquipment = null;
+        let equipmentList = [];
+        let productList = [];
+        let workerList = [];
+        let lossCodeList = [];
+        let settingDefectList = [];
+        let processDefectList = [];
+        let currentDefectType = ''; // 'setting' 또는 'process'
+        let defectEntryData = {}; // { DefectCode: quantity }
+
+        // ===== 헬퍼 함수 =====
+
+        function getTodayString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function showLoading() {
+            document.getElementById('loadingDiv').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingDiv').style.display = 'none';
+        }
+
+        function showAlert(type, message) {
+            hideAlerts();
+            const alertDiv = type === 'success' ? document.getElementById('successAlert') : document.getElementById('errorAlert');
+            const messageSpan = type === 'success' ? document.getElementById('successMessage') : document.getElementById('errorMessage');
+            
+            messageSpan.textContent = message;
+            alertDiv.style.display = 'block';
+
+            setTimeout(hideAlerts, 5000);
+        }
+
+        function hideAlerts() {
+            document.getElementById('successAlert').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+        }
+
+        function hideAllForms() {
+            document.querySelectorAll('.form-overlay').forEach(form => form.style.display = 'none');
+            hideAlerts();
+        }
+
+        function formatTime(dateValue) {
+            // 1. 빈 값 처리
+            if (dateValue === '' || dateValue === null || dateValue === undefined) {
+                return '-';
+            }
+            
+            // Apps Script에서 넘어온 Date 객체 형태를 처리
+            const dateObject = new Date(dateValue);
+            
+            // 2. 유효하지 않은 날짜(Invalid Date) 처리
+            if (isNaN(dateObject.getTime())) {
+                return '-'; 
+            }
+            
+            // 3. Dec 30 1899 오류 방지 (Apps Script의 빈 셀 기본값)
+            if (dateObject.getFullYear() < 1900) {
+                return '-';
+            }
+
+            const month = dateObject.getMonth() + 1; // 0부터 시작하므로 +1
+            const day = dateObject.getDate();
+            const hours = dateObject.getHours().toString().padStart(2, '0');
+            const minutes = dateObject.getMinutes().toString().padStart(2, '0');
+            
+            return `${month}/${day} ${hours}:${minutes}`;
+        }
+
+        // ===== 초기 로드 함수 =====
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMasterData();
+        });
+
+        // 1단계: 설비 목록 로드
+        function loadMasterData() {
+            showLoading();
+            google.script.run
+                .withSuccessHandler(loadRemainingMasterData) // 성공 시 2단계 호출
+                .withFailureHandler(function(error) {
+                    showAlert('error', '설비 목록 로드 중 오류 발생: ' + error.message);
+                    hideLoading();
+                })
+                .getEquipmentList(); 
+        }
+
+        // 2단계: 나머지 마스터 데이터 로드 및 설비 드롭다운 채우기
+        function loadRemainingMasterData(equipments) {
+            equipmentList = equipments;
+
+            // 설비 드롭다운 채우기
+            const select = document.getElementById('equipmentSelect');
+            select.innerHTML = '<option value="" disabled selected>--- 설비 선택 ---</option>';
+            equipmentList.forEach(eq => {
+                const option = document.createElement('option');
+                option.value = eq.EquipmentCode;
+                option.textContent = eq.EquipmentName;
+                select.appendChild(option);
+            });
+            
+            // 3단계: getAllMasterData 호출 (code.gs의 통합 함수)
+            google.script.run
+                .withSuccessHandler(initializeUI)
+                .withFailureHandler(function(error) {
+                    showAlert('error', '추가 마스터 데이터 로드 중 오류 발생: ' + error.message);
+                    hideLoading();
+                })
+                .getAllMasterData();
+        }
+
+        // 3단계 완료: 모든 마스터 데이터([제품, 작업자, LOSS 코드])를 받은 후 UI 초기화 마무리
+        function initializeUI(results) {
+            console.log("=== initializeUI 진입 ===");
+            console.log("results:", results);
+
+            if (!results || !Array.isArray(results)) {
+                console.error("getAllMasterData() 결과가 유효하지 않습니다:", results);
+                productList = [];
+                workerList = [];
+                lossCodeList = [];
+            } else {
+                productList = Array.isArray(results[0]) ? results[0] : [];
+                workerList = Array.isArray(results[1]) ? results[1] : [];
+                lossCodeList = Array.isArray(results[2]) ? results[2] : [];
+            }
+
+            console.log("productList:", productList);
+            console.log("workerList:", workerList);
+            console.log("lossCodeList:", lossCodeList);
+
+            populateDropdowns();
+            hideLoading();
+            
+            // 초기 화면 상태 설정
+            checkCurrentWorkStatus(false, true); 
+        }
+
+        function showStartShiftForm() {
+            hideAllForms();
+            
+            // 현재 교대 정보 표시
+            google.script.run
+                .withSuccessHandler(function(shiftInfo) {
+                    const displayDiv = document.getElementById('currentShiftDisplay');
+                    if (displayDiv && shiftInfo) {
+                        displayDiv.textContent = `${shiftInfo.ShiftName} (${shiftInfo.StartTime}-${shiftInfo.EndTime})`;
+                    } else if (displayDiv) {
+                        displayDiv.textContent = '교대 정보를 불러올 수 없습니다.';
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    const displayDiv = document.getElementById('currentShiftDisplay');
+                    if (displayDiv) {
+                        displayDiv.textContent = '오류: ' + error.message;
+                    }
+                })
+                .getCurrentShiftInfo();
+            
+            // 설비 상태 정보 로드
+            loadEquipmentStatusForShift();
+            
+            // 인계사항 로드 (현재 교대 기준으로)
+            loadPreviousHandoverDynamic();
+
+            // 비고 필드 초기화 추가
+            document.getElementById('startShiftRemark').value = '';
+            
+            document.getElementById('startShiftForm').style.display = 'flex';
+        }
+
+        function loadPreviousHandoverDynamic() {
+            if (!selectedEquipment) return;
+            
+            const today = getTodayString();
+            
+            google.script.run
+                .withSuccessHandler(function(handoverInfo) {
+                    displayPreviousHandover(handoverInfo);
+                })
+                .withFailureHandler(function(error) {
+                    console.log('인계사항 조회 오류:', error);
+                })
+                .getPreviousShiftHandoverDynamic(selectedEquipment.EquipmentCode, today);
+        }
+
+        function getCurrentShift() {
+            // 서버에서 현재 교대 정보 가져오기
+            google.script.run
+                .withSuccessHandler(function(shiftInfo) {
+                    const displayDiv = document.getElementById('currentShiftDisplay');
+                    if (displayDiv) {
+                        displayDiv.textContent = `${shiftInfo.ShiftName} (${shiftInfo.StartTime}-${shiftInfo.EndTime})`;
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    const displayDiv = document.getElementById('currentShiftDisplay');
+                    if (displayDiv) {
+                        displayDiv.textContent = '교대 정보 로드 실패';
+                    }
+                })
+                .getCurrentShiftInfo();
+        }
+
+        function loadEquipmentStatusForShift() {
+            if (!selectedEquipment) return;
+            
+            google.script.run
+                .withSuccessHandler(function(statusInfo) {
+                    displayEquipmentStatus(statusInfo);
+                })
+                .withFailureHandler(function(error) {
+                    document.getElementById('statusDisplay').innerHTML = '상태 정보를 불러올 수 없습니다.';
+                })
+                .getDetailedEquipmentStatus(selectedEquipment.EquipmentCode);
+        }
+
+        function displayEquipmentStatus(statusInfo) {
+            const statusDiv = document.getElementById('statusDisplay');
+            let statusHtml = '';
+            
+            if (statusInfo.hasOngoing) {
+                const productInfo = statusInfo.lastProductCode ? ` | TM-${statusInfo.lastProductCode}` : '';
+                statusHtml = `
+                    <strong>⚠️ 주의: 기종교환이 미완료</strong><br>
+                    ${statusInfo.ongoingType}: ${statusInfo.details}${productInfo}<br>
+                    <small>기종교환을 먼저 등록해주세요.</small>
+                `;
+            } else if (statusInfo.lastActivity) {
+                const productInfo = statusInfo.lastProductCode ? ` | TM-${statusInfo.lastProductCode}` : '';
+                statusHtml = `
+                    <strong>✅ 정상 상태</strong><br>
+                    마지막 활동: ${statusInfo.lastActivity}${productInfo}<br>
+                    <small>새로운 작업 등록할 수 있습니다.</small>
+                `;
+            } else {
+                statusHtml = `
+                    <strong>🆕 신규 설비</strong><br>
+                    이전 작업 기록이 없습니다.<br>
+                    <small>첫 작업을 시작하세요.</small>
+                `;
+            }
+            
+            statusDiv.innerHTML = statusHtml;
+        }
+
+
+        function populateDropdowns() {
+            console.log("=== populateDropdowns 실행 ===");
+ 
+            console.log("productList:", productList);
+            console.log("lossCodeList:", lossCodeList);
+            
+            // 작업자 드롭다운 (시작, 기종교환)
+            const workerDropdowns = ['startWorkerCode', 'changeoverWorkerCode'];
+            workerDropdowns.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '';
+                workerList.forEach(worker => {
+                    const option = document.createElement('option');
+                    option.value = worker.WorkerCode;
+                    option.textContent = `${worker.WorkerName} (${worker.WorkerCode})`;
+                    select.appendChild(option);
+                });
+            });
+
+            // 제품 검색 기능 초기화
+            setupProductSearch();
+
+            // LOSS 코드 드롭다운 (비가동)
+            const lossSelect = document.getElementById('lossCode');
+            lossSelect.innerHTML = '';
+            lossCodeList.forEach(loss => {
+                const option = document.createElement('option');
+                option.value = loss.LossCode;
+                option.textContent = `${loss.LossName} (${loss.LossCode})`;
+                lossSelect.appendChild(option);
+            });
+        }
+
+        // ===== 설비 선택 및 작업일지 로드 =====
+
+
+        // loadWorkLog 함수에 디버깅 추가
+        function loadWorkLog() {
+            if (!selectedEquipment) {
+                console.log('설비가 선택되지 않음');
+                return;
+            }
+
+            const today = getTodayString();
+            showLoading();
+
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoading();
+                    console.log('원본 서버 응답:', response);
+                    console.log('응답 타입:', typeof response);
+                    console.log('응답 길이:', response ? response.length : 'null');
+                    
+                    try {
+                        let reports;
+                        if (typeof response === 'string') {
+                            reports = JSON.parse(response);
+                        } else {
+                            reports = response;
+                        }
+                        console.log('파싱된 데이터:', reports);
+                        displayWorkLog(reports);
+                    } catch (parseError) {
+                        console.error('JSON 파싱 오류:', parseError);
+                        console.log('파싱 실패한 응답:', response);
+                        showAlert('error', '서버 응답 파싱 실패: ' + parseError.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    console.error('서버 오류:', error);
+                    showAlert('error', '작업일지 로드 실패: ' + error.message);
+                })
+                .getWorkReportByEquipment(selectedEquipment.EquipmentCode, today);
+            loadCurrentShiftDefects();
+            checkStaleOngoing();
+        }
+
+        // 시간대별 근무조 판별
+        function getShiftFromTime(timeValue) {
+            if (!timeValue || timeValue === '') return '-';
+            
+            const timeObj = new Date(timeValue);
+            if (isNaN(timeObj.getTime())) return '-';
+            
+            const hour = timeObj.getHours();
+            
+            // A조: 08:00-16:00, B조: 16:00-00:00, C조: 00:00-08:00
+            if (hour >= 8 && hour < 16) {
+                return 'A조';
+            } else if (hour >= 16 || hour < 0) {
+                return 'B조';
+            } else if (hour >= 0 && hour < 8) {
+                return 'C조';
+            }
+            
+            return '-';
+        }
+
+        // 작업일지 표시 (INCOMPLETE 상태 추가)
+        function displayWorkLog(reports) {
+            const workTableBody = document.getElementById('workTableBody');
+            const downtimeTableBody = document.getElementById('downtimeTableBody');
+            
+            workTableBody.innerHTML = '';
+            downtimeTableBody.innerHTML = '';
+            
+            const selectedDate = getTodayString();
+            
+            if (!reports || reports.length === 0) {
+                workTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="no-record">
+                            최근 2일간 작업 기록이 없습니다.
+                        </td>
+                    </tr>
+                `;
+                downtimeTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="no-record">
+                            최근 2일간 비가동 기록이 없습니다.
+                        </td>
+                    </tr>
+                `;
+                checkCurrentWorkStatus(false); 
+                return;
+            }
+
+            // 작업/기종교환 데이터와 비가동 데이터 분리
+            const workReports = reports.filter(r => r.workType === 'WORK' || r.workType === 'CHANGEOVER');
+
+            const getStartTs = (r) => {
+              if (!r || !r.startTime) return -Infinity;
+              const d = (r.startTime instanceof Date) ? r.startTime : new Date(r.startTime);
+              return isNaN(d.getTime()) ? -Infinity : d.getTime();
+            };
+
+            workReports.sort((a, b) => getStartTs(b) - getStartTs(a));
+            const downtimeReports = reports.filter(r => r.workType === 'DOWNTIME');
+            
+            // 제목 업데이트
+            document.getElementById('workLogTitle').textContent = 
+                `${selectedEquipment.EquipmentName} 작업일지 (${workReports.length}건)`;
+            document.getElementById('downtimeLogTitle').textContent = 
+                `${selectedEquipment.EquipmentName} 비가동내역 (${downtimeReports.length}건)`;
+
+
+            // 작업일지 테이블 생성
+            if (workReports.length === 0) {
+                workTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="no-record">작업 기록이 없습니다.</td>
+                    </tr>
+                `;
+            } else {
+                workReports.forEach((report, index) => {
+                    const startTimeStr = formatTime(report.startTime);
+                    const endTimeStr = formatTime(report.endTime);
+                    const shiftName = getShiftFromTime(report.startTime);
+
+                    // 일자 추출 (시작시간 기준)
+                    let dateStr = '-';
+                    if (report.startTime) {
+                        const dateObj = new Date(report.startTime);
+                        if (!isNaN(dateObj.getTime())) {
+                            const month = dateObj.getMonth() + 1;
+                            const day = dateObj.getDate();
+                            dateStr = `${month}/${day}`;
+                        }
+                    }
+
+                    // 시간만 추출 (HH:mm 형식)
+                    function extractTimeOnly(timeStr) {
+                        if (!timeStr || timeStr === '-') return '-';
+                        // "9/29 15:00" 형식에서 시간만 추출
+                        const parts = timeStr.split(' ');
+                        return parts.length > 1 ? parts[1] : timeStr;
+                    }
+
+                    const startTimeOnly = extractTimeOnly(startTimeStr);
+                    const endTimeOnly = extractTimeOnly(endTimeStr);
+                    
+                    const isWorkOngoing = report.workType === 'WORK' && report.status === 'ONGOING';
+                    const isChangeoverOngoing = report.workType === 'CHANGEOVER' && report.status === 'ONGOING';
+                    const isChangeoverIncomplete = report.workType === 'CHANGEOVER' && report.status === 'INCOMPLETE';
+                    const isChangeover = report.workType === 'CHANGEOVER';
+                    
+                    let statusText;
+                    let statusClass = '';
+
+                    if (isWorkOngoing) {
+                        statusText = '진행 중';
+                        if (index === 0) statusClass = 'status-pending';
+                    } else if (isChangeoverOngoing) {
+                        statusText = '진행 중';
+                        if (index === 0) statusClass = 'status-changeover';
+                    } else if (isChangeoverIncomplete) {
+                        statusText = '미완료';
+                        if (index === 0) statusClass = 'status-incomplete';
+                    } else if (isChangeover) {
+                        statusText = '완료';
+                        if (index === 0) statusClass = 'status-changeover';
+                    } else {
+                        statusText = '완료';
+                        if (index === 0) statusClass = 'status-complete';
+                    }
+
+                    // 작업유형 표시 로직 추가
+                    let workTypeDisplay = '';
+                    if (report.workType === 'CHANGEOVER') {
+                        workTypeDisplay = '기종교환';
+                    } else if (report.workType === 'WORK') {
+                        workTypeDisplay = '작업';
+                    } else {
+                        workTypeDisplay = '-';
+                    }
+
+                    const row = workTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${dateStr}</td>
+                        <td class="time-cell">${startTimeOnly}</td>
+                        <td class="time-cell">${endTimeOnly}</td>
+                        <td>${shiftName}</td>
+                        <td class="work-type-cell">${workTypeDisplay}</td>
+                        <td>${report.productCode || '-'}</td>
+                        <td>${report.productName || '-'}</td>
+                        <td>${report.quantity > 0 ? report.quantity : '-'}</td>
+                        <td class="${statusClass}">${statusText}</td>
+                        <td>${report.remark || '-'}</td>
+                    `;
+                });
+            }
+
+            // 비가동내역 테이블 생성
+            if (downtimeReports.length === 0) {
+                downtimeTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="no-record">비가동 기록이 없습니다.</td>
+                    </tr>
+                `;
+            } else {
+                downtimeReports.forEach((report, index) => {
+                    const startTimeStr = formatTime(report.startTime);
+                    const endTimeStr = formatTime(report.endTime);
+                    const shiftName = getShiftFromTime(report.startTime);
+
+                    // 일자 추출 (시작시간 기준)
+                    let dateStr = '-';
+                    if (report.startTime) {
+                        const dateObj = new Date(report.startTime);
+                        if (!isNaN(dateObj.getTime())) {
+                            const month = dateObj.getMonth() + 1;
+                            const day = dateObj.getDate();
+                            dateStr = `${month}/${day}`;
+                        }
+                    }
+                    
+                    // 시간만 추출 (HH:mm 형식)
+                    function extractTimeOnly(timeStr) {
+                        if (!timeStr || timeStr === '-') return '-';
+                        const parts = timeStr.split(' ');
+                        return parts.length > 1 ? parts[1] : timeStr;
+                    }
+
+                    const startTimeOnly = extractTimeOnly(startTimeStr);
+                    const endTimeOnly = extractTimeOnly(endTimeStr);
+                    
+                    const row = downtimeTableBody.insertRow();
+                    row.innerHTML = `
+                        <td>${dateStr}</td>
+                        <td class="time-cell">${startTimeOnly}</td>
+                        <td class="time-cell">${endTimeOnly}</td>
+                        <td>${shiftName}</td>
+                        <td>${getProductCodeForDowntime(report.productCode)}</td>
+                        <td>${report.lossName || '-'}</td>
+                        <td>${report.downtimeDetail || '-'}</td>
+                    `;
+                });
+            }
+            
+            // 진행중인 작업 또는 기종교환이 있는지 확인
+            const hasOngoingWork = workReports.some(r => r.workType === 'WORK' && r.status === 'ONGOING');
+            const hasOngoingChangeover = workReports.some(r => r.workType === 'CHANGEOVER' && r.status === 'ONGOING');
+
+            checkCurrentWorkStatus(hasOngoingWork, false, hasOngoingChangeover);
+        }
+
+        // 비가동 시 TM-NO 표시용 헬퍼 함수
+        function getProductCodeForDowntime(productCode) {
+            return productCode && productCode !== '' ? productCode : '-';
+        }
+
+        function onEquipmentSelect() {
+          const select = document.getElementById('equipmentSelect');
+          const code = select.value;
+
+          selectedEquipment = equipmentList.find(eq => eq.EquipmentCode === code);
+          
+          if (selectedEquipment) {
+            document.getElementById('selectedEquipmentDisplay').textContent = 
+              `${selectedEquipment.EquipmentName} (${selectedEquipment.LineCode})`;
+
+            // 3대 버튼만 보이게
+            document.getElementById('groupButtons').style.display = 'flex';
+            document.querySelector('.action-buttons').style.display = 'none';
+            document.getElementById('defectButtonsArea').style.display = 'none';
+
+            // 테이블/현황은 클릭 시 제어하므로 초기엔 모두 숨김
+            setWorkDefectSectionsVisible(false, false);
+
+            loadDefectMasterData();
+            checkEquipmentStatus();
+            loadWorkLog();
+            checkStaleOngoing();
+          } else {
+            document.getElementById('selectedEquipmentDisplay').textContent = '설비를 선택해주세요';
+            document.getElementById('groupButtons').style.display = 'none';
+            document.querySelector('.action-buttons').style.display = 'none';
+            document.getElementById('defectButtonsArea').style.display = 'none';
+            setWorkDefectSectionsVisible(false, false);
+            checkCurrentWorkStatus(false, true);
+          }
+        }
+
+        function setWorkDefectSectionsVisible(showWork, showDefectStatus){
+          // 작업일지/비가동내역 영역
+          const workLog = document.querySelector('.work-log');
+          const downtimeLog = document.querySelector('.downtime-log');
+          if (workLog) workLog.style.display = showWork ? 'block' : 'none';
+          if (downtimeLog) downtimeLog.style.display = showWork ? 'block' : 'none';
+
+          // 금일 불량 입력 현황 영역
+          const defectStatusArea = document.querySelector('.defect-status-area');
+          if (defectStatusArea) defectStatusArea.style.display = showDefectStatus ? 'block' : 'none';
+        }
+
+        function showTaskGroup(type){
+          const action = document.querySelector('.action-buttons');
+          const defect = document.getElementById('defectButtonsArea');
+
+          if (type === 'work'){
+            // 작업일지등록: 상세 버튼(6개) + 작업일지/비가동내역 표시
+            if (action) action.style.display = 'grid';
+            if (defect) defect.style.display = 'none';
+            setWorkDefectSectionsVisible(true, false);
+          } else if (type === 'defect'){
+            // 불량등록: 불량 버튼(2개) + 금일 불량 입력 현황 표시
+            if (action) action.style.display = 'none';
+            if (defect) defect.style.display = 'grid';
+            setWorkDefectSectionsVisible(false, true);
+          } else if (type === 'inspection'){
+            if (action) action.style.display = 'none';
+            if (defect) defect.style.display = 'none';
+            setWorkDefectSectionsVisible(false, false);
+            showAlert('success','자주검사등록은 준비 중입니다.');
+          }
+        }
+
+        function loadPreviousHandover() {
+            if (!selectedEquipment) return;
+            
+            const startShiftTime = document.getElementById('startShiftTime').value;
+            const today = getTodayString();
+            
+            google.script.run
+                .withSuccessHandler(function(handoverInfo) {
+                    displayPreviousHandover(handoverInfo);
+                })
+                .withFailureHandler(function(error) {
+                    console.log('인계사항 조회 오류:', error);
+                })
+                .getPreviousShiftHandover(selectedEquipment.EquipmentCode, today, startShiftTime);
+        }
+
+        function displayPreviousHandover(handoverInfo) {
+            const handoverDiv = document.getElementById('previousHandoverInfo');
+            const displayDiv = document.getElementById('handoverDisplay');
+            
+            if (handoverInfo && handoverInfo.handoverNote) {
+                displayDiv.innerHTML = `
+                    <strong>📋 ${handoverInfo.shiftType}</strong><br>
+                    ${handoverInfo.handoverNote}<br>
+                    <small>작성자: ${handoverInfo.workerCode} | 작성시간: ${handoverInfo.createdAt || '시간 정보 없음'}</small>
+                `;
+                handoverDiv.style.display = 'block';
+            } else {
+                handoverDiv.style.display = 'none';
+            }
+        }
+
+        function checkEquipmentStatus() {
+            if (!selectedEquipment) return;
+            
+            google.script.run
+                .withSuccessHandler(function(statusResult) {
+                    // 상태 표시 코드 제거됨 - 버튼 활성화만 처리
+                })
+                .withFailureHandler(function(error) {
+                    console.log('설비 상태 확인 오류:', error);
+                })
+                .getEquipmentLastStatus(selectedEquipment.EquipmentCode);
+        }
+
+        function checkCurrentWorkStatus(hasOngoingWork, isNoEquipment = false, hasOngoingChangeover = false) {
+            const startShiftButton = document.getElementById('btnStartShift');
+            const startButton = document.getElementById('btnStartWork');
+            const endButton = document.getElementById('btnEndWork');
+            const changeoverButton = document.getElementById('btnChangeover');
+            const downtimeButton = document.getElementById('btnAddDowntime');
+            const endShiftButton = document.getElementById('btnEndShift');
+ 
+
+            if (isNoEquipment) {
+                startShiftButton.disabled = true;  // 근무시작도 비활성화
+                startButton.disabled = true;
+                endButton.disabled = true;
+                changeoverButton.disabled = true;
+                downtimeButton.disabled = true;
+                endShiftButton.disabled = true;
+
+                return;
+            }
+
+            if (hasOngoingWork) {
+                startShiftButton.disabled = false;
+                startButton.disabled = true;
+                endButton.disabled = false;
+                changeoverButton.disabled = false;
+                downtimeButton.disabled = false;
+                endShiftButton.disabled = false;
+
+            } else if (hasOngoingChangeover) {
+                startShiftButton.disabled = false;
+                startButton.disabled = false;
+                endButton.disabled = true;
+                changeoverButton.disabled = true;
+                downtimeButton.disabled = true;
+                endShiftButton.disabled = false;
+
+            } else {
+                startShiftButton.disabled = false;
+                startButton.disabled = false;
+                endButton.disabled = true;
+                changeoverButton.disabled = false;
+                downtimeButton.disabled = false;
+                endShiftButton.disabled = false;
+
+            }
+        }
+
+        // ===== 폼 표시/제출 함수 =====
+
+        function showStartWorkForm() {
+            hideAllForms();
+            
+            // 시간 드롭다운 채우기
+            populateTimeDropdowns();
+            
+            // 현재 시간을 기본값으로 설정
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = Math.floor(now.getMinutes() / 10) * 10; // 10분 단위로 반올림
+            
+            document.getElementById('startWorkHour').value = currentHour.toString().padStart(2, '0');
+            document.getElementById('startWorkMinute').value = currentMinute.toString().padStart(2, '0');
+            
+            // 제품 검색 초기화
+            document.getElementById('startProductCode').value = '';
+            document.getElementById('selectedProductCode').value = '';
+            hideSelectedProduct();
+
+            document.getElementById('startWorkerCode').selectedIndex = 0;
+            document.getElementById('startRemark').value = '';            
+            document.getElementById('startWorkForm').style.display = 'flex';
+        }
+
+        function showEndWorkForm() {
+            hideAllForms();
+            
+            // 시간 드롭다운 채우기
+            populateTimeDropdowns();
+            
+            // 현재 시간을 기본값으로 설정
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = Math.floor(now.getMinutes() / 10) * 10; // 10분 단위로 반올림
+            
+            document.getElementById('endWorkHour').value = currentHour.toString().padStart(2, '0');
+            document.getElementById('endWorkMinute').value = currentMinute.toString().padStart(2, '0');
+            document.getElementById('endQuantity').value = '0';
+            document.getElementById('endRemark').value = '';
+            
+            document.getElementById('endWorkForm').style.display = 'flex';
+        }
+
+        function showDowntimeForm() {
+            hideAllForms();
+            
+            // 시간 드롭다운 채우기
+            populateTimeDropdowns();
+            
+            // 현재 시간을 기본값으로 설정
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = Math.floor(now.getMinutes() / 10) * 10; // 10분 단위로 반올림
+            
+            // 모든 필드 초기화
+       
+            document.getElementById('lossCode').selectedIndex = 0;
+            document.getElementById('downtimeStartHour').value = currentHour.toString().padStart(2, '0');
+            document.getElementById('downtimeStartMinute').value = currentMinute.toString().padStart(2, '0');
+            document.getElementById('downtimeEndHour').value = currentHour.toString().padStart(2, '0');
+            document.getElementById('downtimeEndMinute').value = currentMinute.toString().padStart(2, '0');
+            document.getElementById('downtimeDetail').value = '';
+            
+            document.getElementById('downtimeForm').style.display = 'flex';
+        }
+
+        function showEndShiftForm() {
+            hideAllForms();
+            
+            // 현재 시간에 따라 적절한 교대 시간 자동 선택
+            const now = new Date();
+            const currentHour = now.getHours();
+            const endShiftSelect = document.getElementById('endShiftTime');
+            
+            if (currentHour >= 6 && currentHour < 14) {
+                endShiftSelect.value = '16:00'; // A조 근무시간
+            } else if (currentHour >= 14 && currentHour < 22) {
+                endShiftSelect.value = '00:00'; // B조 근무시간
+            } else {
+                endShiftSelect.value = '08:00'; // C조 근무시간
+            }
+
+            document.getElementById('endShiftQuantity').value = '0';
+            document.getElementById('shiftBreakWork1').checked = false;
+            document.getElementById('shiftMealWork').checked = false;
+            document.getElementById('shiftBreakWork2').checked = false;
+            document.getElementById('defectConfirmCheck').checked = false;
+            document.getElementById('handoverNote').value = '';
+            document.getElementById('endShiftRemark').value = '';
+            document.getElementById('endShiftForm').style.display = 'flex';
+        }
+
+        function populateTimeDropdowns() {
+            // 모든 시간 드롭다운 (00-23)
+            const hourSelects = [
+                'downtimeStartHour', 'downtimeEndHour', 
+                'startWorkHour', 'endWorkHour',  'changeoverStartHour'
+            ];
+            hourSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '';
+                    for (let i = 0; i < 24; i++) {
+                        const option = document.createElement('option');
+                        const hourStr = i.toString().padStart(2, '0');
+                        option.value = hourStr;
+                        option.textContent = hourStr + '시';
+                        select.appendChild(option);
+                    }
+                }
+            });
+            
+            // 모든 분 드롭다운 (00, 10, 20, 30, 40, 50)
+            const minuteSelects = [
+                'downtimeStartMinute', 'downtimeEndMinute',
+                'startWorkMinute', 'endWorkMinute', 'changeoverStartMinute'
+            ];
+            minuteSelects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    select.innerHTML = '';
+                    for (let i = 0; i < 60; i += 10) {
+                        const option = document.createElement('option');
+                        const minuteStr = i.toString().padStart(2, '0');
+                        option.value = minuteStr;
+                        option.textContent = minuteStr + '분';
+                        select.appendChild(option);
+                    }
+                }
+            });
+        }
+
+        // 불량 마스터 데이터 로드
+        function loadDefectMasterData() {
+            google.script.run
+                .withSuccessHandler(function(defects) {
+                    settingDefectList = defects;
+                    console.log('셋팅불량 목록:', settingDefectList.length);
+                })
+                .withFailureHandler(function(error) {
+                    console.error('셋팅불량 로드 실패:', error);
+                })
+                .getSettingDefectList();
+            
+            google.script.run
+                .withSuccessHandler(function(defects) {
+                    processDefectList = defects;
+                    console.log('공정불량 목록:', processDefectList.length);
+                })
+                .withFailureHandler(function(error) {
+                    console.error('공정불량 로드 실패:', error);
+                })
+                .getProcessDefectList();
+        }
+
+        // showSettingDefectForm 함수 완전 교체
+        function showSettingDefectForm() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+            
+            currentDefectType = 'setting';
+            document.getElementById('defectEntryTitle').textContent = '셋팅불량 등록';
+            
+            // 테이블 영역 숨기고 불량등록 화면 표시
+            document.getElementById('reportTablesArea').style.display = 'none';
+            document.getElementById('defectEntryScreen').style.display = 'block';
+            
+            // 불량 입력 테이블 생성
+            createDefectEntryTable(settingDefectList);
+            
+            // 제품 검색 초기화
+            setupDefectProductSearch();
+            
+            // 필드 초기화
+            document.getElementById('defectProductCode').value = '';
+            defectEntryData = {};
+            updateDefectTotal();
+        }
+
+        // showProcessDefectForm 함수 완전 교체
+        function showProcessDefectForm() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+            
+            currentDefectType = 'process';
+            document.getElementById('defectEntryTitle').textContent = '공정불량 등록';
+            
+            // 테이블 영역 숨기고 불량등록 화면 표시
+            document.getElementById('reportTablesArea').style.display = 'none';
+            document.getElementById('defectEntryScreen').style.display = 'block';
+            
+            // 불량 입력 테이블 생성
+            createDefectEntryTable(processDefectList);
+            
+            // 제품 검색 초기화
+            setupDefectProductSearch();
+            
+            // 필드 초기화
+            document.getElementById('defectProductCode').value = '';
+            defectEntryData = {};
+            updateDefectTotal();
+        }
+
+        // 불량등록 화면 닫기
+        function closeDefectEntryScreen() {
+            document.getElementById('defectEntryScreen').style.display = 'none';
+            document.getElementById('reportTablesArea').style.display = 'block';
+            defectEntryData = {};
+        }
+
+        // 불량 입력 테이블 생성 함수 수정
+        function createDefectEntryTable(defectList) {
+            const grid = document.getElementById('defectEntryGrid');
+            grid.innerHTML = '';
+            
+            defectList.forEach(defect => {
+                const item = document.createElement('div');
+                item.className = 'defect-entry-item';
+                item.innerHTML = `
+                    <div class="defect-name-cell">${defect.DefectName}</div>
+                    <input type="number" 
+                          class="defect-qty-input" 
+                          id="qty_${defect.DefectCode}" 
+                          min="0" 
+                          placeholder="0"
+                          onchange="updateDefectEntryData('${defect.DefectCode}', this.value)">
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        // 불량 수량 업데이트
+        function updateDefectEntryData(defectCode, quantity) {
+            const qty = parseInt(quantity) || 0;
+            if (qty > 0) {
+                defectEntryData[defectCode] = qty;
+            } else {
+                delete defectEntryData[defectCode];
+            }
+            updateDefectTotal();
+        }
+
+        // 총 불량 수량 업데이트
+        function updateDefectTotal() {
+            let total = 0;
+            for (let code in defectEntryData) {
+                total += defectEntryData[code];
+            }
+            document.getElementById('defectTotalQty').textContent = total;
+        }
+
+        // 불량등록 화면용 제품 검색
+        function setupDefectProductSearch() {
+            const searchInput = document.getElementById('defectProductCode');
+            const resultsDiv = document.getElementById('defectProductSearchResults');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.trim().toLowerCase();
+                
+                if (searchTerm.length === 0) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+                
+                const filteredProducts = productList.filter(product => 
+                    product.ProductCode.toLowerCase().includes(searchTerm) ||
+                    product.ProductName.toLowerCase().includes(searchTerm)
+                );
+                
+                resultsDiv.innerHTML = '';
+                
+                if (filteredProducts.length === 0) {
+                    resultsDiv.innerHTML = '<div class="search-result-item">검색 결과가 없습니다.</div>';
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+                
+                filteredProducts.forEach(product => {
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.innerHTML = `
+                        <div class="product-code">${product.ProductCode}</div>
+                        <div class="product-name">${product.ProductName}</div>
+                    `;
+                    
+                    item.addEventListener('click', function() {
+                        searchInput.value = product.ProductCode;
+                        resultsDiv.style.display = 'none';
+                    });
+                    
+                    resultsDiv.appendChild(item);
+                });
+                
+                resultsDiv.style.display = 'block';
+            });
+            
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                    resultsDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // 불량 등록 제출 (배치 방식)
+        function submitDefectEntry() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+            
+            const productCode = document.getElementById('defectProductCode').value.trim();
+            
+            if (!productCode) {
+                showAlert('error', 'TM-NO를 입력해주세요.');
+                return;
+            }
+            
+            if (Object.keys(defectEntryData).length === 0) {
+                showAlert('error', '최소 1개 이상의 불량 수량을 입력해주세요.');
+                return;
+            }
+            
+            const today = getTodayString();
+            const now = new Date();
+            
+            // 불량 유형별로 개별 행 생성
+            const defectReports = [];
+            for (let defectCode in defectEntryData) {
+                defectReports.push({
+                    date: today,
+                    equipmentCode: selectedEquipment.EquipmentCode,
+                    productCode: productCode,
+                    defectCode: defectCode,
+                    defectQty: defectEntryData[defectCode],
+                    defectTime: now.toISOString(),
+                    remark: ''
+                });
+            }
+            
+            showLoading();
+            
+            // 배치로 한 번에 전송
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoading();
+                    
+                    let parsedResponse;
+                    try {
+                        if (typeof response === 'string') {
+                            parsedResponse = JSON.parse(response);
+                        } else {
+                            parsedResponse = response;
+                        }
+                    } catch (e) {
+                        showAlert('error', '서버 응답 파싱 실패');
+                        return;
+                    }
+                    
+                    if (parsedResponse.success) {
+                        showAlert('success', parsedResponse.message);
+                        closeDefectEntryScreen();
+                        loadCurrentShiftDefects();
+                    } else {
+                        showAlert('error', '불량 등록 실패: ' + parsedResponse.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showAlert('error', '불량 등록 중 오류: ' + error.message);
+                })
+                .addDefectReportBatch(defectReports);
+        }
+
+        // 현재 교대 불량 현황 로드
+        function loadCurrentShiftDefects() {
+            if (!selectedEquipment) return;
+            
+            const today = getTodayString();
+            
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    try {
+                        let defectReports;
+                        if (typeof response === 'string') {
+                            defectReports = JSON.parse(response);
+                        } else {
+                            defectReports = response;
+                        }
+                        console.log('불량 현황 데이터:', defectReports);
+                        displayCurrentShiftDefects(defectReports);
+                    } catch (parseError) {
+                        console.error('불량 현황 파싱 오류:', parseError);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    console.error('불량 현황 로드 실패:', error);
+                })
+                .getCurrentShiftDefects(selectedEquipment.EquipmentCode, today);
+        }
+
+        // 현재 교대 불량 현황 표시
+        function displayCurrentShiftDefects(defectReports) {
+            const gridDiv = document.getElementById('defectStatusGrid');
+            gridDiv.innerHTML = '';
+            
+            if (!defectReports || defectReports.length === 0) {
+                gridDiv.innerHTML = '<div class="no-defect-message">금일 현재 교대에 입력된 불량이 없습니다.</div>';
+                return;
+            }
+            
+            const settingDefects = defectReports.filter(r => r.defectType === 'setting');
+            const processDefects = defectReports.filter(r => r.defectType === 'process');
+            
+            if (settingDefects.length > 0) {
+                const settingSection = document.createElement('div');
+                settingSection.className = 'defect-section';
+                settingSection.innerHTML = '<div class="defect-section-title setting">셋팅불량</div>';
+                
+                const settingGrid = document.createElement('div');
+                settingGrid.className = 'defect-grid';
+                
+                settingDefects.forEach((report) => {
+                    const card = document.createElement('div');
+                    card.className = 'defect-card defect-card-setting';
+                    card.innerHTML = `
+                        <div class="defect-card-name">${report.defectName}</div>
+                        <div class="defect-card-qty">${report.defectQty}개</div>
+                        <div class="defect-card-product">TM-${report.productCode}</div>
+                    `;
+                    settingGrid.appendChild(card);
+                });
+                
+                settingSection.appendChild(settingGrid);
+                gridDiv.appendChild(settingSection);
+            }
+            
+            if (processDefects.length > 0) {
+                const processSection = document.createElement('div');
+                processSection.className = 'defect-section';
+                processSection.innerHTML = '<div class="defect-section-title process">공정불량</div>';
+                
+                const processGrid = document.createElement('div');
+                processGrid.className = 'defect-grid';
+                
+                processDefects.forEach((report) => {
+                    const card = document.createElement('div');
+                    card.className = 'defect-card defect-card-process';
+                    card.innerHTML = `
+                        <div class="defect-card-name">${report.defectName}</div>
+                        <div class="defect-card-qty">${report.defectQty}개</div>
+                        <div class="defect-card-product">TM-${report.productCode}</div>
+                    `;
+                    processGrid.appendChild(card);
+                });
+                
+                processSection.appendChild(processGrid);
+                gridDiv.appendChild(processSection);
+            }
+        }
+
+
+        // 불량 시간 드롭다운 채우기
+        function populateDefectTimeDropdowns(type) {
+            const hourSelect = document.getElementById(type + 'DefectHour');
+            const minuteSelect = document.getElementById(type + 'DefectMinute');
+            
+            // 시간 (00-23)
+            hourSelect.innerHTML = '';
+            for (let i = 0; i < 24; i++) {
+                const option = document.createElement('option');
+                const hourStr = i.toString().padStart(2, '0');
+                option.value = hourStr;
+                option.textContent = hourStr + '시';
+                hourSelect.appendChild(option);
+            }
+            
+            // 분 (00, 10, 20, 30, 40, 50)
+            minuteSelect.innerHTML = '';
+            for (let i = 0; i < 60; i += 10) {
+                const option = document.createElement('option');
+                const minuteStr = i.toString().padStart(2, '0');
+                option.value = minuteStr;
+                option.textContent = minuteStr + '분';
+                minuteSelect.appendChild(option);
+            }
+        }
+
+        // 셋팅불량 등록 제출
+        function submitSettingDefect() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+            
+            const defectCode = document.getElementById('settingDefectCode').value;
+            const defectQty = parseInt(document.getElementById('settingDefectQty').value);
+            const defectHour = document.getElementById('settingDefectHour').value;
+            const defectMinute = document.getElementById('settingDefectMinute').value;
+            const remark = document.getElementById('settingDefectRemark').value;
+            
+            if (!defectCode) {
+                showAlert('error', '불량 유형을 선택해주세요.');
+                return;
+            }
+            
+            if (!defectQty || defectQty < 1) {
+                showAlert('error', '불량 수량을 입력해주세요.');
+                return;
+            }
+            
+            const today = getTodayString();
+            const defectTime = `${defectHour}:${defectMinute}`;
+            const defectDateTime = new Date(`${today}T${defectTime}:00`);
+            
+            const defectData = {
+                date: today,
+                equipmentCode: selectedEquipment.EquipmentCode,
+                workerCode: '',
+                productCode: '',
+                defectCode: defectCode,
+                defectQty: defectQty,
+                defectTime: defectDateTime.toISOString(),
+                remark: remark
+            };
+            
+            hideAllForms();
+            showLoading();
+            
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        loadDefectReport();
+                    } else {
+                        showAlert('error', '셋팅불량 등록 실패: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showAlert('error', '셋팅불량 등록 중 오류: ' + error.message);
+                })
+                .addDefectReport(defectData);
+        }
+
+        // 공정불량 등록 제출
+        function submitProcessDefect() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+            
+            const defectCode = document.getElementById('processDefectCode').value;
+            const defectQty = parseInt(document.getElementById('processDefectQty').value);
+            const defectHour = document.getElementById('processDefectHour').value;
+            const defectMinute = document.getElementById('processDefectMinute').value;
+            const remark = document.getElementById('processDefectRemark').value;
+            
+            if (!defectCode) {
+                showAlert('error', '불량 유형을 선택해주세요.');
+                return;
+            }
+            
+            if (!defectQty || defectQty < 1) {
+                showAlert('error', '불량 수량을 입력해주세요.');
+                return;
+            }
+            
+            const today = getTodayString();
+            const defectTime = `${defectHour}:${defectMinute}`;
+            const defectDateTime = new Date(`${today}T${defectTime}:00`);
+            
+            const defectData = {
+                date: today,
+                equipmentCode: selectedEquipment.EquipmentCode,
+                workerCode: '',
+                productCode: '',
+                defectCode: defectCode,
+                defectQty: defectQty,
+                defectTime: defectDateTime.toISOString(),
+                remark: remark
+            };
+            
+            hideAllForms();
+            showLoading();
+            
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    hideLoading();
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        loadDefectReport();
+                    } else {
+                        showAlert('error', '공정불량 등록 실패: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showAlert('error', '공정불량 등록 중 오류: ' + error.message);
+                })
+                .addDefectReport(defectData);
+        }
+
+        // 제품 검색 기능 설정
+        function setupProductSearch() {
+            const searchInput = document.getElementById('startProductCode');
+            const resultsDiv = document.getElementById('productSearchResults');
+            const hiddenInput = document.getElementById('selectedProductCode');
+            
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.trim().toLowerCase();
+                hiddenInput.value = ''; // 숨겨진 필드 초기화
+                hideSelectedProduct(); // 제품명 표시 숨기기
+                
+                if (searchTerm.length === 0) {
+                    resultsDiv.style.display = 'none';
+                    return;
+                }
+                
+                // 검색어와 일치하는 제품 찾기
+                const filteredProducts = productList.filter(product => 
+                    product.ProductCode.toLowerCase().includes(searchTerm) ||
+                    product.ProductName.toLowerCase().includes(searchTerm)
+                );
+                
+                displaySearchResults(filteredProducts, resultsDiv, searchInput, hiddenInput);
+            });
+            
+            // 외부 클릭시 검색 결과 숨기기
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                    resultsDiv.style.display = 'none';
+                }
+            });
+        }
+
+        // 검색 결과 표시
+        function displaySearchResults(products, resultsDiv, searchInput, hiddenInput) {
+            resultsDiv.innerHTML = '';
+            
+            if (products.length === 0) {
+                resultsDiv.innerHTML = '<div class="search-result-item">검색 결과가 없습니다.</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+            
+            products.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.innerHTML = `
+                    <div class="product-code">${product.ProductCode}</div>
+                    <div class="product-name">${product.ProductName}</div>
+                `;
+                
+                item.addEventListener('click', function() {
+                    searchInput.value = product.ProductCode;
+                    hiddenInput.value = product.ProductCode;
+                    resultsDiv.style.display = 'none';
+                    
+                    // 선택된 제품명 표시
+                    showSelectedProduct(product.ProductName);
+                });
+                
+                resultsDiv.appendChild(item);
+            });
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        // 선택된 제품명 표시
+        function showSelectedProduct(productName) {
+            const displayDiv = document.getElementById('selectedProductDisplay');
+            const nameSpan = document.getElementById('selectedProductName');
+            
+            nameSpan.textContent = productName;
+            displayDiv.style.display = 'block';
+        }
+
+        function toggleChangeoverManualTime(checked) {
+          document.getElementById('changeoverManualTimeBox').style.display = checked ? 'block' : 'none';
+        }
+        
+        function showChangeoverForm() {
+            hideAllForms();
+            
+            // 모든 필드 초기화
+            document.getElementById('changeoverWorkerCode').selectedIndex = 0;
+            document.getElementById('changeoverRemark').value = '';
+
+            // 시간 드롭다운 채우기 + 현재시간 기본값
+            populateTimeDropdowns();
+            const now = new Date();
+            const hh = now.getHours().toString().padStart(2, '0');
+            const mm = Math.floor(now.getMinutes() / 10) * 10;
+            document.getElementById('changeoverStartHour').value = hh;
+            document.getElementById('changeoverStartMinute').value = mm.toString().padStart(2, '0');
+
+            // 수동입력 OFF가 기본
+            const chk = document.getElementById('changeoverManualTimeChk');
+            chk.checked = false;
+            toggleChangeoverManualTime(false);
+            
+            document.getElementById('changeoverForm').style.display = 'flex';
+        }
+
+        function submitChangeover() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+
+            const workerCode = document.getElementById('changeoverWorkerCode').value;
+            const remark = document.getElementById('changeoverRemark').value;
+            
+            const today = getTodayString();
+            const now = new Date();
+
+            let startTimeManual = null;
+            const manualChecked = document.getElementById('changeoverManualTimeChk').checked;
+            if (manualChecked) {
+              const hh = document.getElementById('changeoverStartHour').value;
+              const mm = document.getElementById('changeoverStartMinute').value;
+              const manualDate = new Date(`${today}T${hh}:${mm}:00`);
+              startTimeManual = manualDate.toISOString();
+            }
+            
+            const changeoverData = {
+                date: today,
+                equipmentCode: selectedEquipment.EquipmentCode,
+                workerCode: workerCode,
+                startTime: now.toISOString(), // 임시값, 서버에서 이전 작업과 연계하여 수정됨
+                startTimeManual: startTimeManual,
+                remark: remark
+            };
+
+            hideAllForms();
+            showLoading();
+
+            google.script.run
+                .withSuccessHandler(function(jsonResponse) {
+                    hideLoading();
+                    
+                    let response;
+                    try {
+                        response = JSON.parse(jsonResponse);
+                    } catch(e) {
+                        response = { success: false, message: '서버 응답 파싱 실패!' };
+                    }
+
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        loadWorkLog();
+                    } else {
+                        showAlert('error', '기종교환 시작 실패: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showAlert('error', '기종교환 시작 중 백엔드 오류: ' + error.message);
+                })
+                .addChangeover(changeoverData);
+        }
+
+        // 선택된 제품명 숨기기
+        function hideSelectedProduct() {
+            const displayDiv = document.getElementById('selectedProductDisplay');
+            displayDiv.style.display = 'none';
+        }
+
+
+        function submitStartWork() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+
+            const workerCode = document.getElementById('startWorkerCode').value;
+            const productCode = document.getElementById('selectedProductCode').value; // 숨겨진 필드에서 가져오기
+            const remark = document.getElementById('startRemark').value;
+            const startHour = document.getElementById('startWorkHour').value;
+            const startMinute = document.getElementById('startWorkMinute').value;
+            
+            if (!productCode) {
+                showAlert('error', '제품을 선택해주세요.');
+                return;
+            }
+            
+            if (!startHour || !startMinute) {
+                showAlert('error', '시작시간을 선택해 주세요.');
+                return;
+            }
+            
+            // 시간을 오늘 날짜와 결합하여 완전한 Date 객체 생성
+            const today = getTodayString();
+            const startTime = `${startHour}:${startMinute}`;
+            const startDateTime = new Date(`${today}T${startTime}:00`);
+            
+            const workData = {
+                date: today,
+                equipmentCode: selectedEquipment.EquipmentCode,
+                workerCode: workerCode,
+                productCode: productCode,
+                startTime: startDateTime.toISOString(),
+                remark: remark
+            };
+
+            hideAllForms();
+            showLoading();
+
+            const timeoutId = setTimeout(() => {
+                hideLoading();
+                showAlert('error', '작업 시작 요청이 20초 안에 응답하지 않았습니다. 서버 실행 로그(code.gs)를 확인해 주세요.');
+            }, 20000);
+
+            google.script.run
+                .withSuccessHandler(function(jsonResponse) {
+                    clearTimeout(timeoutId); 
+                    hideLoading();
+                    
+                    let response;
+                    try {
+                        response = JSON.parse(jsonResponse);
+                    } catch(e) {
+                        response = { success: false, message: '서버 응답 파싱 실패!' };
+                    }
+                    
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        loadWorkLog();
+                    } else {
+                        showAlert('error', '작업 시작 실패: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    clearTimeout(timeoutId);
+                    hideLoading();
+                    showAlert('error', '작업 시작 중 백엔드 오류: ' + error.message);
+                })
+                .startWork(workData);
+        }
+      
+        function checkStaleOngoing() {
+          if (!selectedEquipment) {
+            hideStaleWarning();
+            return;
+          }
+          google.script.run
+            .withSuccessHandler(function(resp) {
+              let data = resp;
+              try { if (typeof resp === 'string') data = JSON.parse(resp); } catch(e) {}
+              if (data && data.hasStale && data.items && data.items.length > 0) {
+                const count = data.items.length;
+                const sample = data.items[0];
+                const sampleTxt = `${sample.date} ${sample.workType}${sample.productCode ? ' (TM-' + sample.productCode + ')' : ''}`;
+                const txt = count === 1 ? `1건: ${sampleTxt}` : `${count}건 (예: ${sampleTxt} 등)`;
+                showStaleWarning(txt);
+              } else {
+                hideStaleWarning();
+              }
+            })
+            .withFailureHandler(function(err) {
+              console.log('getStaleOngoingInfo 실패:', err);
+              // 실패해도 배너는 숨김 유지
+              hideStaleWarning();
+            })
+            .getStaleOngoingInfo(selectedEquipment.EquipmentCode);
+        }
+
+        function showStaleWarning(summaryText) {
+          const bar = document.getElementById('staleWarningBar');
+          const txt = document.getElementById('staleSummaryText');
+          if (txt) txt.textContent = summaryText || '';
+          if (bar) bar.style.display = 'flex';
+        }
+
+        function hideStaleWarning() {
+          const bar = document.getElementById('staleWarningBar');
+          if (bar) bar.style.display = 'none';
+        }
+
+        function onResolveStaleOngoing() {
+          if (!selectedEquipment) return;
+          showLoading();
+          const nowIso = new Date().toISOString();
+          google.script.run
+            .withSuccessHandler(function(resp) {
+              hideLoading();
+              let data = resp;
+              try { if (typeof resp === 'string') data = JSON.parse(resp); } catch(e) {}
+              if (data && data.success) {
+                showAlert('success', data.message || '정리 완료');
+                hideStaleWarning();
+                // 최신 상태 갱신
+                loadWorkLog();
+              } else {
+                showAlert('error', (data && data.message) ? data.message : '정리 실패');
+              }
+            })
+            .withFailureHandler(function(err) {
+              hideLoading();
+              showAlert('error', '정리 중 오류: ' + err.message);
+            })
+            .resolveStaleOngoing(selectedEquipment.EquipmentCode, nowIso);
+        }
+
+        function submitEndWork() {
+            if (!selectedEquipment) return;
+
+            const quantity = parseInt(document.getElementById('endQuantity').value) || 0;
+            const remark = document.getElementById('endRemark').value;
+            const endHour = document.getElementById('endWorkHour').value;
+            const endMinute = document.getElementById('endWorkMinute').value;
+            
+            if (quantity < 0) {
+                showAlert('error', '생산 수량은 0 이상이어야 합니다.');
+                return;
+            }
+            
+            if (!endHour || !endMinute) {
+                showAlert('error', '종료시간을 선택해 주세요.');
+                return;
+            }
+            
+            // 시간을 오늘 날짜와 결합하여 완전한 Date 객체 생성
+            const today = getTodayString();
+            const endTime = `${endHour}:${endMinute}`;
+            const endDateTime = new Date(`${today}T${endTime}:00`);
+
+            const endData = {
+                date: today,
+                equipmentCode: selectedEquipment.EquipmentCode,
+                endTime: endDateTime.toISOString(),
+                quantity: quantity,
+                remark: remark
+                // 휴식근무 관련 데이터 제거
+            };
+
+            hideAllForms();
+            showLoading();
+
+            google.script.run
+                .withSuccessHandler(function(jsonResponse) {
+                    hideLoading();
+                    
+                    let response;
+                    try {
+                        response = JSON.parse(jsonResponse);
+                    } catch(e) {
+                        response = { success: false, message: '서버 응답 파싱 실패!' };
+                    }
+                    
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        loadWorkLog();
+                    } else {
+                        showAlert('error', '작업 종료 실패: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showAlert('error', '작업 종료 중 백엔드 오류: ' + error.message);
+                })
+                .endWork(endData);
+        }
+
+        function submitEndShift() {
+            if (!selectedEquipment) {
+                showAlert('error', '설비를 먼저 선택해주세요.');
+                return;
+            }
+
+            // 불량 등록 확인 체크박스 검증
+            const defectConfirmed = document.getElementById('defectConfirmCheck').checked;
+            if (!defectConfirmed) {
+                showAlert('error', '불량 등록 확인 체크박스를 선택해주세요.');
+                return;
+            }
+
+            const quantity = parseInt(document.getElementById('endShiftQuantity').value) || 0;
+            const endShiftTime = document.getElementById('endShiftTime').value;
+            const remark = document.getElementById('endShiftRemark').value;
+            const handoverNote = document.getElementById('handoverNote').value;
+            
+            // 체크박스 값 가져오기
+            const breakWork1 = document.getElementById('shiftBreakWork1').checked ? 'Y' : 'N';
+            const mealWork = document.getElementById('shiftMealWork').checked ? 'Y' : 'N';
+            const breakWork2 = document.getElementById('shiftBreakWork2').checked ? 'Y' : 'N';
+            
+            // 시간을 오늘 날짜와 결합하여 완전한 Date 객체 생성
+            const today = getTodayString();
+            let endDateTime = new Date(`${today}T${endShiftTime}:00`);
+
+            // B조→C조 교대(00:00) 시 다음날로 보정
+            const hour = parseInt(endShiftTime.split(':')[0]);
+            if (hour >= 0 && hour < 8) {
+                endDateTime.setDate(endDateTime.getDate() + 1);
+            }
+
+            const shiftData = {
+                date: today,
+                equipmentCode: selectedEquipment.EquipmentCode,
+                endTime: endDateTime.toISOString(),
+                quantity: quantity,
+                breakWork1: breakWork1,
+                mealWork: mealWork,
+                breakWork2: breakWork2,
+                remark: remark,
+                handoverNote: handoverNote
+            };
+
+            hideAllForms();
+            showLoading();
+
+            google.script.run
+                .withSuccessHandler(function(jsonResponse) {
+                    hideLoading();
+                    
+                    let response;
+                    try {
+                        response = JSON.parse(jsonResponse);
+                    } catch(e) {
+                        response = { success: false, message: '서버 응답 파싱 실패!' };
+                    }
+                    
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        loadWorkLog();
+                    } else {
+                        showAlert('error', '근무종료 실패: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showAlert('error', '근무종료 중 백엔드 오류: ' + error.message);
+                })
+                .endShift(shiftData);
+        }
+
+        function submitDowntime() {
+            console.log('>>> submitDowntime 함수 호출됨 <<<');
+            
+            const lossCodeElement = document.getElementById('lossCode');
+            
+            const remarkElement = document.getElementById('downtimeRemark');
+            const startHourElement = document.getElementById('downtimeStartHour');
+            const startMinuteElement = document.getElementById('downtimeStartMinute');
+            const endHourElement = document.getElementById('downtimeEndHour');
+            const endMinuteElement = document.getElementById('downtimeEndMinute');
+
+            if (!lossCodeElement) {
+                console.error("오류: 'lossCode' ID를 가진 요소를 찾을 수 없습니다.");
+                showAlert('error', '비가동 사유 선택 필드를 찾을 수 없습니다. HTML ID를 확인해 주세요.');
+                return;
+            }
+
+            const lossCode = lossCodeElement.value;
+         
+            const downtimeDetail = document.getElementById('downtimeDetail').value;
+            const startHour = startHourElement.value;
+            const startMinute = startMinuteElement.value;
+            const endHour = endHourElement.value;
+            const endMinute = endMinuteElement.value;
+            
+            if (!lossCode) {
+                showAlert('error', '비가동 사유를 선택해 주세요.');
+                return;
+            }
+            
+            if (!startHour || !startMinute || !endHour || !endMinute) {
+                showAlert('error', '시작시간과 종료시간을 모두 선택해 주세요.');
+                return;
+            }
+            
+            // 시간 문자열 생성 (HH:MM 형태)
+            const startTime = `${startHour}:${startMinute}`;
+            const endTime = `${endHour}:${endMinute}`;
+            
+            if (startTime > endTime) {
+                showAlert('error', '시작시간이 종료시간보다 늦을 수 없습니다.');
+                return;
+            }
+            
+            // 시간을 오늘 날짜와 결합하여 완전한 Date 객체 생성
+            const today = getTodayString();
+            const startDateTime = new Date(`${today}T${startTime}:00`);
+            const endDateTime = new Date(`${today}T${endTime}:00`);
+            
+            const downtimeData = {
+                date: today,
+                equipmentCode: selectedEquipment.EquipmentCode,
+                workerCode: '',
+                startTime: startDateTime.toISOString(),
+                endTime: endDateTime.toISOString(),
+                lossCode: lossCode,
+                downtimeDetail: downtimeDetail
+            };
+
+            showLoading(); 
+
+            google.script.run
+                .withSuccessHandler(function(jsonResponse) { 
+                    hideLoading();
+                    
+                    let response;
+                    try {
+                        response = JSON.parse(jsonResponse); 
+                    } catch(e) {
+                        console.error("비가동 등록 응답 파싱 오류:", e);
+                        response = { success: false, message: '서버 응답 파싱 실패!' };
+                    }
+
+                    if (response.success) {
+                        showAlert('success', response.message);
+                        hideAllForms();
+                        loadWorkLog();
+                    } else {
+                        showAlert('error', '비가동 등록 실패: ' + response.message);
+                    }
+                })
+                .withFailureHandler(function(error) {
+                    hideLoading();
+                    showAlert('error', '비가동 등록 중 백엔드 오류: ' + error.message);
+                })
+                .addDowntime(downtimeData);
+        }
+    </script>
+</body>
+</html>
