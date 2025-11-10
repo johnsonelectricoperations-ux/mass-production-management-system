@@ -192,6 +192,198 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* 작업일지 화면 */
+        .worklog-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .worklog-container {
+            background: white;
+            border-radius: 15px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .worklog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .worklog-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .worklog-close-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .worklog-close-btn:hover {
+            background: #5a6268;
+        }
+
+        .worklog-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-field.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-field label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .form-field input,
+        .form-field select,
+        .form-field textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .time-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .worklog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        @media (max-width: 768px) {
+            .worklog-container {
+                padding: 20px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .worklog-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -243,6 +435,104 @@
                     <div class="nav-label">불량율입력</div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- 작업일지 작성 화면 -->
+    <div class="worklog-screen" id="worklogScreen">
+        <div class="worklog-container">
+            <div class="worklog-header">
+                <div class="worklog-title">📝 작업일지 작성</div>
+                <button class="worklog-close-btn" onclick="closeWorkLog()">닫기</button>
+            </div>
+
+            <form class="worklog-form" id="worklogForm" onsubmit="submitWorkLog(event)">
+                <!-- 기본 정보 -->
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="workDate">작업일자</label>
+                        <input type="date" id="workDate" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="workTime">작업시간</label>
+                        <input type="time" id="workTime" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="worker">작업자</label>
+                        <input type="text" id="worker" placeholder="작업자 이름" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="tmNo">TM-No</label>
+                        <input type="text" id="tmNo" placeholder="제품 코드">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="productName">품명</label>
+                        <input type="text" id="productName" placeholder="제품 이름">
+                    </div>
+                    <div class="form-field">
+                        <label for="productQty">생산수량</label>
+                        <input type="number" id="productQty" placeholder="0" min="0">
+                    </div>
+                </div>
+
+                <!-- 비가동 정보 -->
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="downtimeCode">비가동코드</label>
+                        <select id="downtimeCode">
+                            <option value="">선택 안함</option>
+                            <option value="D01">D01 - 설비고장</option>
+                            <option value="D02">D02 - 자재부족</option>
+                            <option value="D03">D03 - 금형교체</option>
+                            <option value="D04">D04 - 품질검사</option>
+                            <option value="D05">D05 - 기타</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label>비가동 시간</label>
+                        <div class="time-inputs">
+                            <input type="time" id="downtimeStart" placeholder="시작">
+                            <input type="time" id="downtimeEnd" placeholder="종료">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-field full-width">
+                    <label for="downtimeDetail">비가동 내역</label>
+                    <textarea id="downtimeDetail" placeholder="비가동 발생 사유 및 조치 내용을 입력하세요"></textarea>
+                </div>
+
+                <!-- 휴식시간 근무 여부 -->
+                <div class="form-field full-width">
+                    <label>휴식시간 근무 여부</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="breakWork1" name="breakWork">
+                            <label for="breakWork1">1차 휴식시간 근무</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="breakWork2" name="breakWork">
+                            <label for="breakWork2">식사시간 근무</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="breakWork3" name="breakWork">
+                            <label for="breakWork3">2차 휴식시간 근무</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 버튼 -->
+                <div class="worklog-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeWorkLog()">취소</button>
+                    <button type="submit" class="btn btn-primary">등록</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -363,7 +653,62 @@
 
         // 작업일지작성 클릭
         function openWorkLog() {
-            alert(`작업일지작성\n\n공정: ${selectedProcess}\n설비: ${selectedMachine}\n\n(기능 구현 예정)`);
+            // 현재 날짜와 시간 설정
+            const now = new Date();
+            const dateStr = now.toISOString().split('T')[0];
+            const timeStr = now.toTimeString().slice(0, 5);
+
+            document.getElementById('workDate').value = dateStr;
+            document.getElementById('workTime').value = timeStr;
+
+            // 작업일지 화면 표시
+            document.getElementById('worklogScreen').style.display = 'block';
+        }
+
+        // 작업일지 닫기
+        function closeWorkLog() {
+            document.getElementById('worklogScreen').style.display = 'none';
+            document.getElementById('worklogForm').reset();
+        }
+
+        // 작업일지 제출
+        function submitWorkLog(event) {
+            event.preventDefault();
+
+            const formData = {
+                process: selectedProcess,
+                machine: selectedMachine,
+                date: document.getElementById('workDate').value,
+                time: document.getElementById('workTime').value,
+                worker: document.getElementById('worker').value,
+                tmNo: document.getElementById('tmNo').value,
+                productName: document.getElementById('productName').value,
+                productQty: document.getElementById('productQty').value,
+                downtimeCode: document.getElementById('downtimeCode').value,
+                downtimeStart: document.getElementById('downtimeStart').value,
+                downtimeEnd: document.getElementById('downtimeEnd').value,
+                downtimeDetail: document.getElementById('downtimeDetail').value,
+                breakWork1: document.getElementById('breakWork1').checked,
+                breakWork2: document.getElementById('breakWork2').checked,
+                breakWork3: document.getElementById('breakWork3').checked
+            };
+
+            console.log('작업일지 데이터:', formData);
+
+            // TODO: Google Apps Script로 데이터 전송
+            // google.script.run
+            //     .withSuccessHandler(function(response) {
+            //         alert('작업일지가 등록되었습니다.');
+            //         closeWorkLog();
+            //     })
+            //     .withFailureHandler(function(error) {
+            //         alert('등록 실패: ' + error.message);
+            //     })
+            //     .saveWorkLog(formData);
+
+            // 임시: 콘솔 출력 및 닫기
+            alert('작업일지가 등록되었습니다.\n(개발 중 - 실제 저장 기능은 추후 구현)');
+            closeWorkLog();
         }
 
         // 자주검사등록 클릭
