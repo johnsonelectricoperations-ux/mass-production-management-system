@@ -1,0 +1,379 @@
+<!-- 작업일지 작성 화면 -->
+<div class="worklog-screen" id="worklogScreen">
+    <div class="worklog-container">
+        <div class="worklog-header">
+            <div class="worklog-title">📝 작업일지 작성 (3교대 시간표)</div>
+            <button class="worklog-close-btn" onclick="closeWorkLog()">닫기</button>
+        </div>
+
+        <div class="worklog-date-selector">
+            <label for="worklogDate">작업일자:</label>
+            <input type="date" id="worklogDate">
+        </div>
+
+        <div class="worklog-table-container">
+            <table class="worklog-table" id="worklogTable">
+                <thead>
+                    <tr>
+                        <th>시간</th>
+                        <th>작업자</th>
+                        <th>TM-No</th>
+                        <th>품명</th>
+                        <th>실적</th>
+                        <th>비가동코드</th>
+                        <th colspan="2">비가동시간</th>
+                        <th>비가동내역</th>
+                        <th>휴식근무</th>
+                    </tr>
+                    <tr>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th></th>
+                        <th>시작</th>
+                        <th>종료</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="worklogTableBody">
+                    <!-- JavaScript로 동적 생성 -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="worklog-buttons">
+            <button type="button" class="btn btn-secondary" onclick="closeWorkLog()">취소</button>
+            <button type="button" class="btn btn-primary" onclick="saveWorkLog()">저장</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* 작업일지 화면 */
+    .worklog-screen {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        overflow-y: auto;
+        padding: 20px;
+    }
+
+    .worklog-container {
+        background: white;
+        border-radius: 15px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .worklog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 3px solid #667eea;
+    }
+
+    .worklog-title {
+        font-size: 1.5em;
+        font-weight: bold;
+        color: #667eea;
+    }
+
+    .worklog-close-btn {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: all 0.3s;
+    }
+
+    .worklog-close-btn:hover {
+        background: #5a6268;
+    }
+
+    .worklog-date-selector {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .worklog-date-selector label {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .worklog-date-selector input[type="date"] {
+        padding: 8px 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1em;
+    }
+
+    .worklog-table-container {
+        overflow-x: auto;
+        margin-bottom: 20px;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+
+    .worklog-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85em;
+    }
+
+    .worklog-table th {
+        background: #667eea;
+        color: white;
+        padding: 8px 5px;
+        text-align: center;
+        font-weight: 600;
+        border: 1px solid #5568d3;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        font-size: 0.9em;
+    }
+
+    .worklog-table td {
+        border: 1px solid #dee2e6;
+        padding: 5px;
+        text-align: center;
+    }
+
+    .worklog-table td.time-cell {
+        background: #f8f9fa;
+        font-weight: 600;
+        color: #495057;
+        min-width: 60px;
+    }
+
+    .worklog-table td.shift-a {
+        background: #fff3cd;
+    }
+
+    .worklog-table td.shift-b {
+        background: #d1ecf1;
+    }
+
+    .worklog-table td.shift-c {
+        background: #f8d7da;
+    }
+
+    .worklog-table input[type="text"],
+    .worklog-table input[type="number"],
+    .worklog-table input[type="time"],
+    .worklog-table select,
+    .worklog-table textarea {
+        width: 100%;
+        padding: 4px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9em;
+        box-sizing: border-box;
+    }
+
+    .worklog-table textarea {
+        min-height: 30px;
+        resize: vertical;
+    }
+
+    .worklog-table input:focus,
+    .worklog-table select:focus,
+    .worklog-table textarea:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+    .break-check {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .break-check input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
+    .worklog-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        padding-top: 20px;
+        border-top: 2px solid #e0e0e0;
+    }
+
+    @media (max-width: 1200px) {
+        .worklog-table {
+            font-size: 0.75em;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .worklog-container {
+            padding: 15px;
+        }
+
+        .worklog-table {
+            font-size: 0.7em;
+        }
+
+        .worklog-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+    // 작업일지 테이블 생성
+    function generateWorkLogTable() {
+        const tbody = document.getElementById('worklogTableBody');
+        tbody.innerHTML = '';
+
+        // 08시부터 다음날 07시까지 24시간
+        for (let hour = 8; hour < 32; hour++) {
+            const displayHour = hour >= 24 ? hour - 24 : hour;
+            const hourStr = displayHour.toString().padStart(2, '0') + ':00';
+
+            // 교대 구분 (A조: 08-16, B조: 16-24, C조: 00-08)
+            let shiftClass = '';
+            if (hour >= 8 && hour < 16) {
+                shiftClass = 'shift-a'; // A조 (노란색)
+            } else if (hour >= 16 && hour < 24) {
+                shiftClass = 'shift-b'; // B조 (파란색)
+            } else {
+                shiftClass = 'shift-c'; // C조 (빨간색)
+            }
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="time-cell">${hourStr}</td>
+                <td class="${shiftClass}">
+                    <input type="text" id="worker_${hour}" placeholder="작업자">
+                </td>
+                <td class="${shiftClass}">
+                    <input type="text" id="tmNo_${hour}" placeholder="TM-No">
+                </td>
+                <td class="${shiftClass}">
+                    <input type="text" id="product_${hour}" placeholder="품명">
+                </td>
+                <td class="${shiftClass}">
+                    <input type="number" id="qty_${hour}" placeholder="0" min="0">
+                </td>
+                <td class="${shiftClass}">
+                    <select id="downcode_${hour}">
+                        <option value="">-</option>
+                        <option value="D01">D01-설비고장</option>
+                        <option value="D02">D02-자재부족</option>
+                        <option value="D03">D03-금형교체</option>
+                        <option value="D04">D04-품질검사</option>
+                        <option value="D05">D05-기타</option>
+                    </select>
+                </td>
+                <td class="${shiftClass}">
+                    <input type="time" id="downstart_${hour}">
+                </td>
+                <td class="${shiftClass}">
+                    <input type="time" id="downend_${hour}">
+                </td>
+                <td class="${shiftClass}">
+                    <textarea id="downdetail_${hour}" placeholder="비가동내역"></textarea>
+                </td>
+                <td class="${shiftClass}">
+                    <div class="break-check">
+                        <input type="checkbox" id="breakwork_${hour}">
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
+    }
+
+    // 작업일지 열기
+    function openWorkLog() {
+        // 현재 날짜 설정
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        document.getElementById('worklogDate').value = dateStr;
+
+        // 테이블 생성
+        generateWorkLogTable();
+
+        // 화면 표시
+        document.getElementById('worklogScreen').style.display = 'block';
+    }
+
+    // 작업일지 닫기
+    function closeWorkLog() {
+        document.getElementById('worklogScreen').style.display = 'none';
+    }
+
+    // 작업일지 저장
+    function saveWorkLog() {
+        const workDate = document.getElementById('worklogDate').value;
+        const workLogData = [];
+
+        // 24시간 데이터 수집
+        for (let hour = 8; hour < 32; hour++) {
+            const rowData = {
+                hour: hour >= 24 ? hour - 24 : hour,
+                worker: document.getElementById(`worker_${hour}`).value,
+                tmNo: document.getElementById(`tmNo_${hour}`).value,
+                product: document.getElementById(`product_${hour}`).value,
+                qty: document.getElementById(`qty_${hour}`).value,
+                downtimeCode: document.getElementById(`downcode_${hour}`).value,
+                downtimeStart: document.getElementById(`downstart_${hour}`).value,
+                downtimeEnd: document.getElementById(`downend_${hour}`).value,
+                downtimeDetail: document.getElementById(`downdetail_${hour}`).value,
+                breakWork: document.getElementById(`breakwork_${hour}`).checked
+            };
+
+            // 데이터가 있는 행만 수집
+            if (rowData.worker || rowData.tmNo || rowData.product || rowData.qty) {
+                workLogData.push(rowData);
+            }
+        }
+
+        console.log('작업일지 데이터:', {
+            date: workDate,
+            process: selectedProcess,
+            machine: selectedMachine,
+            data: workLogData
+        });
+
+        // TODO: Google Apps Script로 데이터 전송
+        // google.script.run
+        //     .withSuccessHandler(function(response) {
+        //         alert('작업일지가 저장되었습니다.');
+        //         closeWorkLog();
+        //     })
+        //     .withFailureHandler(function(error) {
+        //         alert('저장 실패: ' + error.message);
+        //     })
+        //     .saveWorkLogData(workDate, selectedProcess, selectedMachine, workLogData);
+
+        alert('작업일지가 저장되었습니다.\n(개발 중 - 실제 저장 기능은 추후 구현)');
+        closeWorkLog();
+    }
+</script>
