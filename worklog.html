@@ -7,18 +7,25 @@
         </div>
 
         <div class="worklog-date-selector">
-            <div class="selector-row">
-                <label for="worklogDate">작업일자</label>
-                <input type="date" id="worklogDate">
-            </div>
+            <div class="selector-group">
+                <div class="selector-item">
+                    <label for="worklogDate">작업일자</label>
+                    <input type="date" id="worklogDate">
+                </div>
 
-            <div class="selector-row">
-                <label for="shiftSelect">근무조</label>
-                <select id="shiftSelect" onchange="onShiftChange()">
-                    <option value="A">A조 (08:00~16:00)</option>
-                    <option value="B">B조 (16:00~24:00)</option>
-                    <option value="C">C조 (00:00~08:00)</option>
-                </select>
+                <div class="selector-item">
+                    <label for="shiftSelect">근무조</label>
+                    <select id="shiftSelect" onchange="onShiftChange()">
+                        <option value="A">A조 (08:00~16:00)</option>
+                        <option value="B">B조 (16:00~24:00)</option>
+                        <option value="C">C조 (00:00~08:00)</option>
+                    </select>
+                </div>
+
+                <div class="selector-item">
+                    <label for="workerName">작업자</label>
+                    <input type="text" id="workerName" placeholder="작업자 이름">
+                </div>
             </div>
         </div>
 
@@ -107,29 +114,39 @@
 
     .worklog-date-selector {
         margin-bottom: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
     }
 
-    .selector-row {
+    .selector-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+    }
+
+    .selector-item {
         display: flex;
         flex-direction: column;
         gap: 8px;
     }
 
-    .selector-row label {
+    .selector-item label {
         font-weight: 600;
         color: #333;
-        font-size: 1.1em;
+        font-size: 1em;
     }
 
-    .selector-row input[type="date"],
-    .selector-row select {
+    .selector-item input[type="date"],
+    .selector-item input[type="text"],
+    .selector-item select {
         padding: 12px;
         border: 2px solid #e0e0e0;
         border-radius: 8px;
-        font-size: 1.1em;
+        font-size: 1em;
+    }
+
+    @media (max-width: 600px) {
+        .selector-group {
+            grid-template-columns: 1fr;
+        }
     }
 
     .worklog-table-container {
@@ -189,7 +206,6 @@
     }
 
     .worklog-table input[type="text"],
-    .worklog-table input[type="time"],
     .worklog-table select,
     .worklog-table textarea {
         width: 100%;
@@ -276,16 +292,35 @@
             font-size: 0.85em;
         }
 
-        .worklog-table input,
+        .worklog-table input[type="text"],
         .worklog-table select,
         .worklog-table textarea {
             padding: 6px;
+            font-size: 0.95em;
+        }
+
+        .selector-item input,
+        .selector-item select {
             font-size: 0.95em;
         }
     }
 </style>
 
 <script>
+    // 시간 옵션 생성 (10분 단위)
+    function generateTimeOptions() {
+        let options = '<option value="">선택</option>';
+        for (let h = 0; h < 24; h++) {
+            for (let m = 0; m < 60; m += 10) {
+                const hourStr = h.toString().padStart(2, '0');
+                const minStr = m.toString().padStart(2, '0');
+                const timeValue = `${hourStr}:${minStr}`;
+                options += `<option value="${timeValue}">${timeValue}</option>`;
+            }
+        }
+        return options;
+    }
+
     // 작업일지 테이블 생성
     function generateWorkLogTable() {
         const tbody = document.getElementById('worklogTableBody');
@@ -331,10 +366,14 @@
                     </select>
                 </td>
                 <td class="${shiftClass}">
-                    <input type="time" id="downstart_${hour}">
+                    <select id="downstart_${hour}">
+                        ${generateTimeOptions()}
+                    </select>
                 </td>
                 <td class="${shiftClass}">
-                    <input type="time" id="downend_${hour}">
+                    <select id="downend_${hour}">
+                        ${generateTimeOptions()}
+                    </select>
                 </td>
                 <td class="${shiftClass}">
                     <textarea id="downdetail_${hour}" placeholder="비가동내역"></textarea>
@@ -377,6 +416,13 @@
     function saveWorkLog() {
         const workDate = document.getElementById('worklogDate').value;
         const selectedShift = document.getElementById('shiftSelect').value;
+        const workerName = document.getElementById('workerName').value;
+
+        if (!workerName) {
+            alert('작업자 이름을 입력해주세요.');
+            return;
+        }
+
         const workLogData = [];
 
         // 근무조별 시간 범위 설정
@@ -413,6 +459,7 @@
         console.log('작업일지 데이터:', {
             date: workDate,
             shift: selectedShift,
+            worker: workerName,
             process: selectedProcess,
             machine: selectedMachine,
             data: workLogData
