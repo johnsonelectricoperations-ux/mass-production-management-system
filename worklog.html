@@ -6,6 +6,15 @@
             <button class="worklog-close-btn" onclick="closeWorkLog()">닫기</button>
         </div>
 
+        <!-- 선택된 공정/설비 정보 -->
+        <div class="process-machine-info">
+            <span class="info-label">공정:</span>
+            <span class="info-value" id="displayProcessInfo">-</span>
+            <span class="info-separator">/</span>
+            <span class="info-label">설비:</span>
+            <span class="info-value" id="displayMachineInfo">-</span>
+        </div>
+
         <div class="worklog-date-selector">
             <div class="selector-group">
                 <div class="selector-item">
@@ -110,6 +119,34 @@
 
     .worklog-close-btn:active {
         background: #5a6268;
+    }
+
+    /* 공정/설비 정보 영역 */
+    .process-machine-info {
+        background: #f0f4ff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        text-align: center;
+        border: 2px solid #667eea;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+        margin-right: 5px;
+    }
+
+    .info-value {
+        font-weight: 700;
+        color: #667eea;
+        font-size: 1.1em;
+    }
+
+    .info-separator {
+        margin: 0 15px;
+        color: #dee2e6;
+        font-weight: bold;
     }
 
     .worklog-date-selector {
@@ -328,32 +365,41 @@
 
         const selectedShift = document.getElementById('shiftSelect').value;
 
-        // 근무조별 시간 범위 설정
-        let startHour, endHour, shiftClass;
+        // 근무조별 시간 범위 및 휴식시간 설정
+        let startHour, endHour, shiftClass, breakHours;
 
         if (selectedShift === 'A') {
             startHour = 8;
             endHour = 16;
             shiftClass = 'shift-a'; // A조 (노란색)
+            breakHours = [10, 12, 14]; // 10시, 12시, 14시
         } else if (selectedShift === 'B') {
             startHour = 16;
             endHour = 24;
             shiftClass = 'shift-b'; // B조 (파란색)
+            breakHours = [18, 20, 22]; // 18시, 20시, 22시
         } else { // C조
             startHour = 0;
             endHour = 8;
             shiftClass = 'shift-c'; // C조 (빨간색)
+            breakHours = [2, 4, 6]; // 02시, 04시, 06시
         }
 
         // 선택된 근무조 시간대만 표시
         for (let hour = startHour; hour < endHour; hour++) {
             const hourStr = hour.toString().padStart(2, '0') + ':00';
 
+            // 휴식근무 체크박스 표시 여부
+            const hasBreakCheckbox = breakHours.includes(hour);
+            const breakCell = hasBreakCheckbox
+                ? `<div class="break-check"><input type="checkbox" id="breakwork_${hour}"></div>`
+                : '-';
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="time-cell">${hourStr}</td>
                 <td class="${shiftClass}">
-                    <input type="text" id="tmNo_${hour}" placeholder="TM-No">
+                    <input type="text" id="tmNo_${hour}" placeholder="TM-No" onchange="autoFillTmNo(${hour})">
                 </td>
                 <td class="${shiftClass}">
                     <select id="downcode_${hour}">
@@ -379,13 +425,50 @@
                     <textarea id="downdetail_${hour}" placeholder="비가동내역"></textarea>
                 </td>
                 <td class="${shiftClass}">
-                    <div class="break-check">
-                        <input type="checkbox" id="breakwork_${hour}">
-                    </div>
+                    ${breakCell}
                 </td>
             `;
             tbody.appendChild(row);
         }
+    }
+
+    // TM-NO 자동 채우기 기능
+    function autoFillTmNo(changedHour) {
+        const selectedShift = document.getElementById('shiftSelect').value;
+        const tmNoValue = document.getElementById(`tmNo_${changedHour}`).value;
+
+        // 근무조별 시간 범위 설정
+        let startHour, endHour;
+        if (selectedShift === 'A') {
+            startHour = 8;
+            endHour = 16;
+        } else if (selectedShift === 'B') {
+            startHour = 16;
+            endHour = 24;
+        } else { // C조
+            startHour = 0;
+            endHour = 8;
+        }
+
+        // 변경된 시간 이후의 모든 시간대에 TM-NO 복사
+        // 이후 시간대 중 다른 TM-NO가 나오기 전까지만 채움
+        for (let hour = changedHour + 1; hour < endHour; hour++) {
+            const nextTmNo = document.getElementById(`tmNo_${hour}`);
+            if (nextTmNo) {
+                // 다음 시간대가 비어있거나 현재 변경된 값과 같은 경우 업데이트
+                if (!nextTmNo.value || nextTmNo.value === tmNoValue ||
+                    nextTmNo.getAttribute('data-auto-filled') === 'true') {
+                    nextTmNo.value = tmNoValue;
+                    nextTmNo.setAttribute('data-auto-filled', 'true');
+                } else {
+                    // 다른 값이 수동으로 입력된 경우 중단
+                    break;
+                }
+            }
+        }
+
+        // 현재 입력은 수동 입력으로 표시
+        document.getElementById(`tmNo_${changedHour}`).setAttribute('data-auto-filled', 'false');
     }
 
     // 근무조 변경 시 테이블 재생성
@@ -399,6 +482,10 @@
         const now = new Date();
         const dateStr = now.toISOString().split('T')[0];
         document.getElementById('worklogDate').value = dateStr;
+
+        // 선택된 공정/설비 정보 표시
+        document.getElementById('displayProcessInfo').textContent = selectedProcess || '-';
+        document.getElementById('displayMachineInfo').textContent = selectedMachine || '-';
 
         // 테이블 생성
         generateWorkLogTable();
@@ -440,6 +527,7 @@
 
         // 선택된 근무조 시간대만 데이터 수집
         for (let hour = startHour; hour < endHour; hour++) {
+            const breakWorkCheckbox = document.getElementById(`breakwork_${hour}`);
             const rowData = {
                 hour: hour,
                 tmNo: document.getElementById(`tmNo_${hour}`).value,
@@ -447,7 +535,7 @@
                 downtimeStart: document.getElementById(`downstart_${hour}`).value,
                 downtimeEnd: document.getElementById(`downend_${hour}`).value,
                 downtimeDetail: document.getElementById(`downdetail_${hour}`).value,
-                breakWork: document.getElementById(`breakwork_${hour}`).checked
+                breakWork: breakWorkCheckbox ? breakWorkCheckbox.checked : false
             };
 
             // 데이터가 있는 행만 수집
