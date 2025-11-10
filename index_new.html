@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>생산관리시스템</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .selection-area {
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: white;
+            cursor: pointer;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group select:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .navigation-area {
+            display: none;
+            margin-top: 40px;
+        }
+
+        .nav-title {
+            text-align: center;
+            margin-bottom: 25px;
+            color: #333;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .nav-icons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        .nav-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .nav-item:active {
+            transform: translateY(-2px);
+        }
+
+        .nav-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .nav-label {
+            color: white;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .selected-info {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .selected-info p {
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .selected-info strong {
+            color: #667eea;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .nav-icons {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .nav-item {
+                padding: 25px 15px;
+            }
+        }
+
+        /* 로딩 스피너 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>생산관리시스템</h1>
+            <p>공정과 설비를 선택하여 시작하세요</p>
+        </div>
+
+        <div class="selection-area">
+            <div class="form-group">
+                <label for="processSelect">공정명 선택</label>
+                <select id="processSelect">
+                    <option value="">-- 공정을 선택하세요 --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="machineSelect">설비명 선택</label>
+                <select id="machineSelect" disabled>
+                    <option value="">-- 먼저 공정을 선택하세요 --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="selected-info" id="selectedInfo">
+            <p><strong>선택된 공정:</strong> <span id="displayProcess">-</span></p>
+            <p><strong>선택된 설비:</strong> <span id="displayMachine">-</span></p>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>데이터를 불러오는 중...</p>
+        </div>
+
+        <div class="navigation-area" id="navigationArea">
+            <div class="nav-title">작업 메뉴를 선택하세요</div>
+            <div class="nav-icons">
+                <div class="nav-item" onclick="openWorkLog()">
+                    <div class="nav-icon">📝</div>
+                    <div class="nav-label">작업일지작성</div>
+                </div>
+                <div class="nav-item" onclick="openInspection()">
+                    <div class="nav-icon">🔍</div>
+                    <div class="nav-label">자주검사등록</div>
+                </div>
+                <div class="nav-item" onclick="openDefectRate()">
+                    <div class="nav-icon">📊</div>
+                    <div class="nav-label">불량율입력</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let processMachineData = [];
+        let selectedProcess = '';
+        let selectedMachine = '';
+
+        // 페이지 로드 시 공정 데이터 가져오기
+        window.onload = function() {
+            loadProcesses();
+        };
+
+        // 공정 데이터 로드
+        function loadProcesses() {
+            showLoading(true);
+            google.script.run
+                .withSuccessHandler(function(data) {
+                    processMachineData = data;
+                    populateProcessSelect();
+                    showLoading(false);
+                })
+                .withFailureHandler(function(error) {
+                    alert('데이터 로드 실패: ' + error.message);
+                    showLoading(false);
+                })
+                .getProcessMachineData();
+        }
+
+        // 공정 선택 드롭다운 채우기
+        function populateProcessSelect() {
+            const processSelect = document.getElementById('processSelect');
+            const uniqueProcesses = [...new Set(processMachineData.map(item => item.processName))].sort();
+
+            processSelect.innerHTML = '<option value="">-- 공정을 선택하세요 --</option>';
+            uniqueProcesses.forEach(process => {
+                const option = document.createElement('option');
+                option.value = process;
+                option.textContent = process;
+                processSelect.appendChild(option);
+            });
+
+            // 공정 선택 이벤트
+            processSelect.onchange = function() {
+                onProcessChange(this.value);
+            };
+        }
+
+        // 공정 변경 시
+        function onProcessChange(processName) {
+            selectedProcess = processName;
+            const machineSelect = document.getElementById('machineSelect');
+
+            if (!processName) {
+                machineSelect.disabled = true;
+                machineSelect.innerHTML = '<option value="">-- 먼저 공정을 선택하세요 --</option>';
+                hideNavigation();
+                return;
+            }
+
+            // 해당 공정의 설비 목록 필터링
+            const machines = processMachineData
+                .filter(item => item.processName === processName)
+                .map(item => item.machineName)
+                .sort();
+
+            machineSelect.innerHTML = '<option value="">-- 설비를 선택하세요 --</option>';
+            machines.forEach(machine => {
+                const option = document.createElement('option');
+                option.value = machine;
+                option.textContent = machine;
+                machineSelect.appendChild(option);
+            });
+
+            machineSelect.disabled = false;
+
+            // 설비 선택 이벤트
+            machineSelect.onchange = function() {
+                onMachineChange(this.value);
+            };
+
+            hideNavigation();
+        }
+
+        // 설비 변경 시
+        function onMachineChange(machineName) {
+            selectedMachine = machineName;
+
+            if (!machineName) {
+                hideNavigation();
+                return;
+            }
+
+            // 선택 정보 표시
+            document.getElementById('displayProcess').textContent = selectedProcess;
+            document.getElementById('displayMachine').textContent = selectedMachine;
+            document.getElementById('selectedInfo').style.display = 'block';
+
+            // 네비게이션 표시
+            showNavigation();
+        }
+
+        // 네비게이션 표시
+        function showNavigation() {
+            document.getElementById('navigationArea').style.display = 'block';
+        }
+
+        // 네비게이션 숨기기
+        function hideNavigation() {
+            document.getElementById('navigationArea').style.display = 'none';
+            document.getElementById('selectedInfo').style.display = 'none';
+        }
+
+        // 로딩 표시
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        // 작업일지작성 클릭
+        function openWorkLog() {
+            alert(`작업일지작성\n\n공정: ${selectedProcess}\n설비: ${selectedMachine}\n\n(기능 구현 예정)`);
+        }
+
+        // 자주검사등록 클릭
+        function openInspection() {
+            alert(`자주검사등록\n\n공정: ${selectedProcess}\n설비: ${selectedMachine}\n\n(기능 구현 예정)`);
+        }
+
+        // 불량율입력 클릭
+        function openDefectRate() {
+            alert(`불량율입력\n\n공정: ${selectedProcess}\n설비: ${selectedMachine}\n\n(기능 구현 예정)`);
+        }
+    </script>
+</body>
+</html>
