@@ -5,7 +5,7 @@
 
 function doGet(e) {
   try {
-    return HtmlService.createTemplateFromFile('index_new')
+    return HtmlService.createTemplateFromFile('index')
       .evaluate()
       .setTitle('생산관리시스템')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
