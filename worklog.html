@@ -9,6 +9,13 @@
         <div class="worklog-date-selector">
             <label for="worklogDate">작업일자:</label>
             <input type="date" id="worklogDate">
+
+            <label for="shiftSelect" style="margin-left: 30px;">근무조:</label>
+            <select id="shiftSelect" onchange="onShiftChange()">
+                <option value="A">A조 (08:00~16:00)</option>
+                <option value="B">B조 (16:00~24:00)</option>
+                <option value="C">C조 (00:00~08:00)</option>
+            </select>
         </div>
 
         <div class="worklog-table-container">
@@ -117,7 +124,8 @@
         color: #333;
     }
 
-    .worklog-date-selector input[type="date"] {
+    .worklog-date-selector input[type="date"],
+    .worklog-date-selector select {
         padding: 8px 12px;
         border: 2px solid #e0e0e0;
         border-radius: 8px;
@@ -251,20 +259,28 @@
         const tbody = document.getElementById('worklogTableBody');
         tbody.innerHTML = '';
 
-        // 08시부터 다음날 07시까지 24시간
-        for (let hour = 8; hour < 32; hour++) {
-            const displayHour = hour >= 24 ? hour - 24 : hour;
-            const hourStr = displayHour.toString().padStart(2, '0') + ':00';
+        const selectedShift = document.getElementById('shiftSelect').value;
 
-            // 교대 구분 (A조: 08-16, B조: 16-24, C조: 00-08)
-            let shiftClass = '';
-            if (hour >= 8 && hour < 16) {
-                shiftClass = 'shift-a'; // A조 (노란색)
-            } else if (hour >= 16 && hour < 24) {
-                shiftClass = 'shift-b'; // B조 (파란색)
-            } else {
-                shiftClass = 'shift-c'; // C조 (빨간색)
-            }
+        // 근무조별 시간 범위 설정
+        let startHour, endHour, shiftClass;
+
+        if (selectedShift === 'A') {
+            startHour = 8;
+            endHour = 16;
+            shiftClass = 'shift-a'; // A조 (노란색)
+        } else if (selectedShift === 'B') {
+            startHour = 16;
+            endHour = 24;
+            shiftClass = 'shift-b'; // B조 (파란색)
+        } else { // C조
+            startHour = 0;
+            endHour = 8;
+            shiftClass = 'shift-c'; // C조 (빨간색)
+        }
+
+        // 선택된 근무조 시간대만 표시
+        for (let hour = startHour; hour < endHour; hour++) {
+            const hourStr = hour.toString().padStart(2, '0') + ':00';
 
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -310,6 +326,11 @@
         }
     }
 
+    // 근무조 변경 시 테이블 재생성
+    function onShiftChange() {
+        generateWorkLogTable();
+    }
+
     // 작업일지 열기
     function openWorkLog() {
         // 현재 날짜 설정
@@ -332,12 +353,26 @@
     // 작업일지 저장
     function saveWorkLog() {
         const workDate = document.getElementById('worklogDate').value;
+        const selectedShift = document.getElementById('shiftSelect').value;
         const workLogData = [];
 
-        // 24시간 데이터 수집
-        for (let hour = 8; hour < 32; hour++) {
+        // 근무조별 시간 범위 설정
+        let startHour, endHour;
+        if (selectedShift === 'A') {
+            startHour = 8;
+            endHour = 16;
+        } else if (selectedShift === 'B') {
+            startHour = 16;
+            endHour = 24;
+        } else { // C조
+            startHour = 0;
+            endHour = 8;
+        }
+
+        // 선택된 근무조 시간대만 데이터 수집
+        for (let hour = startHour; hour < endHour; hour++) {
             const rowData = {
-                hour: hour >= 24 ? hour - 24 : hour,
+                hour: hour,
                 worker: document.getElementById(`worker_${hour}`).value,
                 tmNo: document.getElementById(`tmNo_${hour}`).value,
                 product: document.getElementById(`product_${hour}`).value,
@@ -357,6 +392,7 @@
 
         console.log('작업일지 데이터:', {
             date: workDate,
+            shift: selectedShift,
             process: selectedProcess,
             machine: selectedMachine,
             data: workLogData
